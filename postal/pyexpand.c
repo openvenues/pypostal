@@ -197,12 +197,6 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
         Py_DECREF(seq);
     }
 
-    if (languages == NULL) {
-        PyErr_SetString(PyExc_TypeError, "Must specify languages=[list of language codes] to expand_address");
-        goto exit_decref_str;
-    }
-
-
     size_t num_expansions = 0;
     char **expansions = expand_address(input, options, &num_expansions);
 
@@ -264,6 +258,7 @@ static int expand_traverse(PyObject *m, visitproc visit, void *arg) {
 
 static int expand_clear(PyObject *m) {
     Py_CLEAR(GETSTATE(m)->error);
+    libpostal_language_classifier_teardown();
     libpostal_teardown();
     return 0;
 }
@@ -315,7 +310,7 @@ init_expand(void) {
         INITERROR;
     }
 
-    if (!libpostal_setup()) {
+    if (!libpostal_setup() || !libpostal_setup_language_classifier()) {
         PyErr_SetString(PyExc_TypeError,
                         "Error loading libpostal");
     }
