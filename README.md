@@ -6,7 +6,7 @@ These are the official Python bindings to https://github.com/openvenues/libposta
 Installation
 ------------
 
-Before using the Node bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
+Before using the Python bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
 
 **On Linux (Ubuntu)**
 ```
@@ -45,11 +45,8 @@ Usage
 
 ```python
 from postal.expand import expand_address
-expand_address('Quatre vignt douze Ave des Champs-Élysées', languages=['fr'])
+expand_address('Quatre vignt douze Ave des Champs-Élysées')
 
 from postal.parser import parse_address
 parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater London, EC2A 4RH, United Kingdom')
 ```
-
-**Note**: for expand_address, we currently default to English if no languages parameter is passed. When the language classifier is complete we'll remove this requirement and libpostal will predict the language automatically if none is specified.
-
