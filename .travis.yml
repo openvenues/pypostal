@@ -22,7 +22,7 @@ install:
     - cd ..
     - export CFLAGS=-I$(pwd)/deps/include
     - export LDFLAGS=-L$(pwd)/deps/lib
-    - python setup.py install
+    - python setup.py build_ext --inplace
 script:
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/deps/lib
     - nosetests postal/tests
