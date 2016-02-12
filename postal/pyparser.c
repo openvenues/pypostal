@@ -251,7 +251,7 @@ static struct PyModuleDef module_def = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_parser(void) {
+PyInit__parser(void) {
 #else
 
 #define INITERROR return

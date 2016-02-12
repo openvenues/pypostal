@@ -157,7 +157,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
 
                 language = NULL;
 
-                #if IS_PY3K
+                #ifdef IS_PY3K
 
                 if (PyBytes_Check(item)) {
                     language = PyBytes_AsString(item);
@@ -258,7 +258,7 @@ static int expand_traverse(PyObject *m, visitproc visit, void *arg) {
 
 static int expand_clear(PyObject *m) {
     Py_CLEAR(GETSTATE(m)->error);
-    libpostal_language_classifier_teardown();
+    libpostal_teardown_language_classifier();
     libpostal_teardown();
     return 0;
 }
@@ -278,7 +278,7 @@ static struct PyModuleDef module_def = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_expand(void) {
+PyInit__expand(void) {
 
 #else
 
@@ -286,6 +286,7 @@ PyInit_expand(void) {
 
 void cleanup_libpostal(void) {
     libpostal_teardown();
+    libpostal_teardown_language_classifier();
 }
 
 void
@@ -334,7 +335,7 @@ init_expand(void) {
     Py_AtExit(&cleanup_libpostal);
 #endif
 
-#if IS_PY3K
+#ifdef IS_PY3K
     return module;
 #endif
 }
