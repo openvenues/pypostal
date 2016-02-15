@@ -19,6 +19,9 @@ def main():
         install_requires=[
             'six',
         ],
+        setup_requires=[
+            'nose>=1.0'
+        ],
         ext_modules=[
             Extension('postal._expand',
                       sources=['postal/pyexpand.c'],
