@@ -21,7 +21,7 @@ struct module_state {
 static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *arg_input;
     PyObject *arg_languages;
-    normalize_options_t options = LIBPOSTAL_DEFAULT_OPTIONS;
+    normalize_options_t options = get_libpostal_default_options();
 
     PyObject *result = NULL;
 

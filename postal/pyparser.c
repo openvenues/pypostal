@@ -140,7 +140,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
         }
     }
     
-    address_parser_options_t options = LIBPOSTAL_ADDRESS_PARSER_DEFAULT_OPTIONS;
+    address_parser_options_t options = get_libpostal_address_parser_default_options();
     options.language = language;
     options.country = country;
 
