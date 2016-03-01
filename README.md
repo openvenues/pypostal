@@ -62,7 +62,7 @@ python setup.py build_ext --inplace
 Compatibility
 -------------
 
-pypostal supports Python 2.7+ and Python 3.4+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a ctypes or CFFI wrapper, but is not a goal for this repo.
+pypostal supports Python 2.7+ and Python 3.4+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a CFFI wrapper, but is not a goal for this repo.
 
 Tests
 -----
