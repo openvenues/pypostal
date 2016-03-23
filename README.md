@@ -1,7 +1,7 @@
 pypostal
 --------
 
-[![Build Status](https://travis-ci.org/openvenues/pypostal.svg?branch=master)](https://travis-ci.org/openvenues/pypostal)
+[![Build Status](https://travis-ci.org/openvenues/pypostal.svg?branch=master)](https://travis-ci.org/openvenues/pypostal) [![PyPI version](https://img.shields.io/pypi/v/postal.svg)](https://pypi.python.org/postal) [![License](https://img.shields.io/github/license/openvenues/pypostal.svg)](https://github.com/openvenues/pypostal/blob/master/LICENSE)
 
 These are the official Python bindings to https://github.com/openvenues/libpostal, a fast statistical parser/normalizer for street addresses anywhere in the world.
 
@@ -48,15 +48,7 @@ sudo ldconfig
 To install the Python library, just run:
 
 ```
-git clone https://github.com/openvenues/pypostal
-cd pypostal
-python setup.py install
-```
-
-If you want to import or run tests straight from your source checkout, use:
-
-```
-python setup.py build_ext --inplace
+pip install postal
 ```
 
 Compatibility
@@ -70,5 +62,8 @@ Tests
 Make sure you have [nose](https://nose.readthedocs.org/en/latest/) installed, then run:
 
 ```
+python setup.py build_ext --inplace
 nosetests postal/tests
 ```
+
+The ```build_ext --inplace``` business is needed so the C extensions build in the source checkout directory and are accessible/importalbe by the Python modules.
