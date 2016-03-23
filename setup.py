@@ -43,6 +43,7 @@ def main():
         packages=find_packages(),
         zip_safe=False,
         url='https://github.com/openvenues/pypostal',
+        download_url='https://github.com/openvenues/pypostal/tarball/0.3',
         description='Python bindings to libpostal for fast international address parsing/normalization',
         license='MIT License',
         maintainer='mapzen.com',
