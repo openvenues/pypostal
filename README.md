@@ -10,7 +10,7 @@ Usage
 
 ```python
 from postal.expand import expand_address
-expand_address('Quatre vignt douze Ave des Champs-Élysées')
+expand_address('Quatre vingt douze Ave des Champs-Élysées')
 
 from postal.parser import parse_address
 parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater London, EC2A 4RH, United Kingdom')
