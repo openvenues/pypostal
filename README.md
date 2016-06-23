@@ -25,7 +25,10 @@ Before using the Python bindings, you must install the libpostal C library. Make
 ```
 sudo apt-get install libsnappy-dev autoconf automake libtool python-dev pkg-config
 ```
-
+**CentOS:**
+```
+sudo yum install snappy snappy-devel autoconf automake libtool python-devel pkgconfig
+```
 **On Mac OSX**
 ```
 sudo brew install snappy autoconf automake libtool pkg-config
