@@ -21,11 +21,11 @@ Installation
 
 Before using the Python bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
 
-**On Linux (Ubuntu)**
+**On Ubuntu/Debian**
 ```
 sudo apt-get install libsnappy-dev autoconf automake libtool python-dev pkg-config
 ```
-**CentOS:**
+**On CentOS/RHEL**
 ```
 sudo yum install snappy snappy-devel autoconf automake libtool python-devel pkgconfig
 ```
