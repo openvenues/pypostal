@@ -91,7 +91,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
         #else
             // Python 2 encoding
 
-            PyObject *str_language = PyUnicode_AsEncodedString(unistr_language, "utf-8", "strict");
+            str_language = PyUnicode_AsEncodedString(unistr_language, "utf-8", "strict");
             if (str_language == NULL) {
                 PyErr_SetString(PyExc_TypeError,
                                 "Language could not be utf-8 encoded");
@@ -125,7 +125,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
         #else
             // Python 2 encoding
 
-            PyObject *str_country = PyUnicode_AsEncodedString(unistr_country, "utf-8", "strict");
+            str_country = PyUnicode_AsEncodedString(unistr_country, "utf-8", "strict");
             if (str_country == NULL) {
                 PyErr_SetString(PyExc_TypeError,
                                 "Country could not be utf-8 encoded");
