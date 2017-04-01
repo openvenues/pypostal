@@ -37,26 +37,6 @@ class TestParser(unittest.TestCase):
                                  'country': 'usa'
                                  })
 
-        self.contains_components('whole foods ny', {'house': 'whole foods', 'state': 'ny'})
-        self.contains_components('1917/2 Pike Drive', {
-                                 'house_number': '1917 / 2',
-                                 'road': 'pike drive'
-                                 })
-        self.contains_components('3437 warwickshire rd,pa', {
-                                 'house_number': '3437',
-                                 'road': 'warwickshire rd',
-                                 'state': 'pa'
-                                 })
-        self.contains_components('3437 warwickshire rd, pa', {
-                                 'house_number': '3437',
-                                 'road': 'warwickshire rd',
-                                 'state': 'pa'
-                                 })
-        self.contains_components('3437 warwickshire rd pa', {
-                                 'house_number': '3437',
-                                 'road': 'warwickshire rd',
-                                 'state': 'pa'
-                                 })
 
 if __name__ == '__main__':
     unittest.main()

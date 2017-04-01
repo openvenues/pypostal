@@ -21,7 +21,7 @@ struct module_state {
 static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *arg_input;
     PyObject *arg_languages;
-    normalize_options_t options = get_libpostal_default_options();
+    libpostal_normalize_options_t options = libpostal_get_default_options();
 
     PyObject *result = NULL;
 
@@ -172,7 +172,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
                 #endif
 
                 if (language != NULL && item != Py_None) {
-                    if (strlen(language) >= MAX_LANGUAGE_LEN) {
+                    if (strlen(language) >= LIBPOSTAL_MAX_LANGUAGE_LEN) {
                         PyErr_SetString(PyExc_TypeError, "language was longer than a language code");
                         free(languages);
                         Py_DECREF(seq);
@@ -198,7 +198,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     }
 
     size_t num_expansions = 0;
-    char **expansions = expand_address(input, options, &num_expansions);
+    char **expansions = libpostal_expand_address(input, options, &num_expansions);
 
     if (languages != NULL) {
         for (int i = 0; i < num_languages; i++) {
@@ -228,10 +228,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     }
 
 exit_free_expansions:
-    for (int i = 0; i < num_expansions; i++) {
-        free(expansions[i]);
-    }
-    free(expansions);
+    libpostal_expansion_array_destroy(expansions, num_expansions);
 exit_decref_str:
     #ifndef IS_PY3K
     Py_XDECREF(str_input);
@@ -316,20 +313,23 @@ init_expand(void) {
                         "Error loading libpostal");
     }
 
-    PyModule_AddIntConstant(module, "ADDRESS_ANY", ADDRESS_ANY);
-    PyModule_AddIntConstant(module, "ADDRESS_NAME", ADDRESS_NAME);
-    PyModule_AddIntConstant(module, "ADDRESS_HOUSE_NUMBER", ADDRESS_HOUSE_NUMBER);
-    PyModule_AddIntConstant(module, "ADDRESS_STREET", ADDRESS_STREET);
-    PyModule_AddIntConstant(module, "ADDRESS_UNIT", ADDRESS_UNIT);
-    PyModule_AddIntConstant(module, "ADDRESS_LOCALITY", ADDRESS_LOCALITY);
-    PyModule_AddIntConstant(module, "ADDRESS_ADMIN1", ADDRESS_ADMIN1);
-    PyModule_AddIntConstant(module, "ADDRESS_ADMIN2", ADDRESS_ADMIN2);
-    PyModule_AddIntConstant(module, "ADDRESS_ADMIN3", ADDRESS_ADMIN3);
-    PyModule_AddIntConstant(module, "ADDRESS_ADMIN4", ADDRESS_ADMIN4);
-    PyModule_AddIntConstant(module, "ADDRESS_ADMIN_OTHER", ADDRESS_ADMIN_OTHER);
-    PyModule_AddIntConstant(module, "ADDRESS_COUNTRY", ADDRESS_COUNTRY);
-    PyModule_AddIntConstant(module, "ADDRESS_NEIGHBORHOOD", ADDRESS_NEIGHBORHOOD);
-    PyModule_AddIntConstant(module, "ADDRESS_ALL", ADDRESS_ALL);
+    PyModule_AddIntConstant(module, "ADDRESS_NONE", LIBPOSTAL_ADDRESS_NONE);
+    PyModule_AddIntConstant(module, "ADDRESS_ANY", LIBPOSTAL_ADDRESS_ANY);
+    PyModule_AddIntConstant(module, "ADDRESS_NAME", LIBPOSTAL_ADDRESS_NAME);
+    PyModule_AddIntConstant(module, "ADDRESS_HOUSE_NUMBER", LIBPOSTAL_ADDRESS_HOUSE_NUMBER);
+    PyModule_AddIntConstant(module, "ADDRESS_STREET", LIBPOSTAL_ADDRESS_STREET);
+    PyModule_AddIntConstant(module, "ADDRESS_UNIT", LIBPOSTAL_ADDRESS_UNIT);
+    PyModule_AddIntConstant(module, "ADDRESS_LEVEL", LIBPOSTAL_ADDRESS_LEVEL);
+    PyModule_AddIntConstant(module, "ADDRESS_STAIRCASE", LIBPOSTAL_ADDRESS_STAIRCASE);
+    PyModule_AddIntConstant(module, "ADDRESS_ENTRANCE", LIBPOSTAL_ADDRESS_ENTRANCE);
+
+    PyModule_AddIntConstant(module, "ADDRESS_CATEGORY", LIBPOSTAL_ADDRESS_CATEGORY);
+    PyModule_AddIntConstant(module, "ADDRESS_NEAR", LIBPOSTAL_ADDRESS_NEAR);
+
+    PyModule_AddIntConstant(module, "ADDRESS_TOPONYM", LIBPOSTAL_ADDRESS_TOPONYM);
+    PyModule_AddIntConstant(module, "ADDRESS_POSTAL_CODE", LIBPOSTAL_ADDRESS_POSTAL_CODE);
+    PyModule_AddIntConstant(module, "ADDRESS_PO_BOX", LIBPOSTAL_ADDRESS_PO_BOX);
+    PyModule_AddIntConstant(module, "ADDRESS_ALL", LIBPOSTAL_ADDRESS_ALL);
 
 #ifndef IS_PY3K
     Py_AtExit(&cleanup_libpostal);
