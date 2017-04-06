@@ -140,11 +140,11 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
         }
     }
     
-    address_parser_options_t options = get_libpostal_address_parser_default_options();
+    libpostal_address_parser_options_t options = libpostal_get_address_parser_default_options();
     options.language = language;
     options.country = country;
 
-    address_parser_response_t *parsed = parse_address(input, options);
+    libpostal_address_parser_response_t *parsed = libpostal_parse_address(input, options);
     if (parsed == NULL) {
         goto exit_decref_country_str;
     }
@@ -184,7 +184,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
     }
 
 exit_destroy_response:
-    address_parser_response_destroy(parsed);
+    libpostal_address_parser_response_destroy(parsed);
 exit_decref_country_str:
     #ifndef IS_PY3K
     if (str_country != Py_None) {
