@@ -31,7 +31,7 @@ class TestExpand(unittest.TestCase):
 
         self.have_expansion_in_common('Thirty W 26th St Fl #7', '30 West Twenty-sixth Street Floor Number 7', languages=['en'])
 
-        self.contained_in_expansions('Friedrichstraße 128, Berlin, Germany', 'friedrich straße 128 berlin germany')
+        self.contained_in_expansions('Friedrichstraße 128, Berlin, Germany', 'friedrich strasse 128 berlin germany')
 
         self.contained_in_expansions('MAPLE ST.', 'maple street')
         self.contained_in_expansions('ST ISIDORE DR', 'saint isidore drive')
