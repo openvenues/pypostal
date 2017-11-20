@@ -25,6 +25,15 @@ class TestExpand(unittest.TestCase):
 
         self.assertTrue(set(expansions1) & set(expansions2))
 
+    def has_exact_expansions(self, address, expected_expansions, **kw):
+        """Test whether an address expands exactly"""
+        expansions = expand_address(address, **kw)
+        self.assertTrue(expansions)
+
+        expansions = set(expansions)
+        expected_expansions = set(expected_expansions)
+        self.assertTrue(expansions == expected_expansions)
+
     def test_expansions(self):
         """Expansion tests."""
         self.contained_in_expansions('781 Franklin Ave Crown Hts Brooklyn NY', '781 franklin avenue crown heights brooklyn new york')
@@ -42,6 +51,8 @@ class TestExpand(unittest.TestCase):
         self.contained_in_expansions('Third St', '3rd street')
 
         self.contained_in_expansions('123 Dr. MLK Jr. Dr.', '123 doctor martin luther king junior drive')
+
+        self.has_exact_expansions('120 Malcolm X Blvd', ['120 malcolm x boulevard'], roman_numerals=False)
 
 if __name__ == '__main__':
     unittest.main()
