@@ -26,7 +26,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *result = NULL;
 
     static char *kwlist[] = {"address",
-                             "languages", 
+                             "languages",
                              "address_components",
                              "latin_ascii",
                              "transliterate",
@@ -62,12 +62,15 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     uint32_t split_alpha_from_numeric = options.split_alpha_from_numeric;
     uint32_t delete_final_periods = options.delete_final_periods;
     uint32_t delete_acronym_periods = options.delete_acronym_periods;
+    uint32_t drop_english_possessives = options.drop_english_possessives;
+    uint32_t delete_apostrophes = options.delete_apostrophes;
     uint32_t expand_numex = options.expand_numex;
     uint32_t roman_numerals = options.roman_numerals;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
-                                     "O|OHIIIIIIIIIIIIIIIIII:pyexpand", kwlist,
-                                     &arg_input, &arg_languages,
+    if (!PyArg_ParseTupleAndKeywords(args, keywords,
+                                     "O|OHIIIIIIIIIIIIIIIII:pyexpand", kwlist,
+                                     &arg_input,
+                                     &arg_languages,
                                      &address_components,
                                      &latin_ascii,
                                      &transliterate,
@@ -82,6 +85,8 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
                                      &split_alpha_from_numeric,
                                      &delete_final_periods,
                                      &delete_acronym_periods,
+                                     &drop_english_possessives,
+                                     &delete_apostrophes,
                                      &expand_numex,
                                      &roman_numerals
                                      )) {
@@ -103,6 +108,8 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     options.split_alpha_from_numeric = split_alpha_from_numeric;
     options.delete_final_periods = delete_final_periods;
     options.delete_acronym_periods = delete_acronym_periods;
+    options.drop_english_possessives = drop_english_possessives;
+    options.delete_apostrophes = delete_apostrophes;
     options.expand_numex = expand_numex;
     options.roman_numerals = roman_numerals;
 
@@ -143,7 +150,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     if (PySequence_Check(arg_languages)) {
         PyObject *seq = PySequence_Fast(arg_languages, "Expected a sequence");
         Py_ssize_t len_languages = PySequence_Length(arg_languages);
-        
+
         if (len_languages > 0) {
             languages = malloc(len_languages * sizeof(char *));
             if (languages == NULL) {
