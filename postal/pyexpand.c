@@ -20,7 +20,7 @@ struct module_state {
 
 static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *arg_input;
-    PyObject *arg_languages;
+    PyObject *arg_languages = Py_None;
     libpostal_normalize_options_t options = libpostal_get_default_options();
 
     PyObject *result = NULL;
@@ -66,7 +66,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     uint32_t roman_numerals = options.roman_numerals;
 
     if (!PyArg_ParseTupleAndKeywords(args, keywords, 
-                                     "O|OHIIIIIIIIIIIIIIIIII:pyexpand", kwlist,
+                                     "O|OHIIIIIIIIIIIIIIIIII:expand", kwlist,
                                      &arg_input, &arg_languages,
                                      &address_components,
                                      &latin_ascii,
