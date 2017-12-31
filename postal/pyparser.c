@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <libpostal/libpostal.h>
+#include "pyutils.h"
 
 #if PY_MAJOR_VERSION >= 3
 #define IS_PY3K
@@ -40,103 +41,27 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
         return 0;
     }
 
-    PyObject *unistr_input = PyUnicode_FromObject(arg_input);
-    if (unistr_input == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Input could not be converted to unicode");
-        return 0;
-    }
-
-    char *input = NULL;
-
-    #ifdef IS_PY3K
-        // Python 3 encoding, supported by Python 3.3+
-
-        input = PyUnicode_AsUTF8(unistr_input);
-
-    #else
-        // Python 2 encoding
-
-        PyObject *str_input = PyUnicode_AsEncodedString(unistr_input, "utf-8", "strict");
-        if (str_input == NULL) {
-            PyErr_SetString(PyExc_TypeError,
-                            "Input could not be utf-8 encoded");
-            goto exit_decref_input_unistr;
-        }
-
-        input = PyBytes_AsString(str_input);
-    #endif
+    char *input = PyObject_to_string(arg_input);
 
     if (input == NULL) {
-        goto exit_decref_input_str;
+        return NULL;
     }
 
     char *language = NULL;
 
-    PyObject *unistr_language = Py_None;
-    PyObject *str_language = Py_None;
-
     if (arg_language != Py_None) {
-        unistr_language = PyUnicode_FromObject(arg_language);
-        if (unistr_language == NULL) {
-            PyErr_SetString(PyExc_TypeError,
-                            "Language could not be converted to unicode");
-        }
-
-        #ifdef IS_PY3K
-            // Python 3 encoding, supported by Python 3.3+
-
-            language = PyUnicode_AsUTF8(unistr_language);
-
-        #else
-            // Python 2 encoding
-
-            str_language = PyUnicode_AsEncodedString(unistr_language, "utf-8", "strict");
-            if (str_language == NULL) {
-                PyErr_SetString(PyExc_TypeError,
-                                "Language could not be utf-8 encoded");
-                goto exit_decref_language_unistr;
-            }
-
-            language = PyBytes_AsString(str_language);
-        #endif
-
+        language = PyObject_to_string(arg_language);
         if (language == NULL) {
-            goto exit_decref_language_str;
+            goto exit_free_input;
         }
     }
 
     char *country = NULL;
-    PyObject *unistr_country = Py_None;
-    PyObject *str_country = Py_None;
 
     if (arg_country != Py_None) {
-        unistr_country = PyUnicode_FromObject(arg_country);
-        if (unistr_country == NULL) {
-            PyErr_SetString(PyExc_TypeError,
-                            "Country could not be converted to unicode");
-        }
-
-        #ifdef IS_PY3K
-            // Python 3 encoding, supported by Python 3.3+
-
-            country = PyUnicode_AsUTF8(unistr_country);
-
-        #else
-            // Python 2 encoding
-
-            str_country = PyUnicode_AsEncodedString(unistr_country, "utf-8", "strict");
-            if (str_country == NULL) {
-                PyErr_SetString(PyExc_TypeError,
-                                "Country could not be utf-8 encoded");
-                goto exit_decref_country_unistr;
-            }
-
-            country = PyBytes_AsString(str_country);
-        #endif
-
+        country = PyObject_to_string(arg_language);
         if (country == NULL) {
-            goto exit_decref_country_str;
+            goto exit_free_language;
         }
     }
     
@@ -146,7 +71,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
 
     libpostal_address_parser_response_t *parsed = libpostal_parse_address(input, options);
     if (parsed == NULL) {
-        goto exit_decref_country_str;
+        goto exit_free_country;
     }
 
     result = PyList_New((Py_ssize_t)parsed->num_components);
@@ -185,33 +110,18 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
 
 exit_destroy_response:
     libpostal_address_parser_response_destroy(parsed);
-exit_decref_country_str:
-    #ifndef IS_PY3K
-    if (str_country != Py_None) {
-        Py_XDECREF(str_country);
+exit_free_country:
+    if (country != NULL) {
+        free(country);
     }
-    #endif
-exit_decref_country_unistr:
-    if (unistr_country != Py_None) {
-        Py_XDECREF(unistr_country);
+exit_free_language:
+    if (language != NULL) {
+        free(language);
     }
-exit_decref_language_str:
-    #ifndef IS_PY3K
-    if (str_language != Py_None) {
-        Py_XDECREF(str_language);
+exit_free_input:
+    if (input != NULL) {
+        free(input);
     }
-    #endif
-exit_decref_language_unistr:
-    if (unistr_language != Py_None) {
-        Py_XDECREF(unistr_language);
-    }
-exit_decref_input_str:
-    #ifndef IS_PY3K
-    Py_XDECREF(str_input);
-    #endif
-exit_decref_input_unistr:
-    Py_XDECREF(unistr_input);
-
     return result;
 }
 
