@@ -84,7 +84,7 @@ static PyObject *py_is_duplicate(PyObject *self, PyObject *args, PyObject *keywo
                              NULL
                             };
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
+    if (!PyArg_ParseTupleAndKeywords(args, keywords,
                                      "OO|O:dedupe", kwlist,
                                      &arg_value1,
                                      &arg_value2,
@@ -274,6 +274,178 @@ static PyObject *py_is_toponym_duplicate(PyObject *self, PyObject *args, PyObjec
     return result;
 }
 
+double *PyObject_to_double_array(PyObject *obj, size_t *num_values) {
+    double *out = NULL;
+    size_t n = 0;
+    if (!PySequence_Check(obj)) {
+        return NULL;
+    }
+
+    PyObject *seq = PySequence_Fast(obj, "Expected a sequence");
+    Py_ssize_t len = PySequence_Length(obj);
+
+    if (len > 0) {
+        out = calloc(len, sizeof(double));
+        if (out == NULL) {
+            return NULL;
+        }
+
+        for (int i = 0; i < len; i++) {
+            PyObject *item = PySequence_Fast_GET_ITEM(seq, i);
+
+            double d;
+
+            if (PyFloat_Check(item)) {
+                d = PyFloat_AsDouble(item);
+            } else if (PyInt_Check(item)) {
+                long l = PyInt_AsLong(item);
+                d = (double)l;
+            } else if (PyLong_Check(item)) {
+                d = PyLong_AsDouble(item);
+            } else {
+                PyErr_SetString(PyExc_TypeError,
+                                "Scores must be numeric types");
+                free(out);
+                return NULL;
+            }
+
+            out[i] = d;
+
+            n++;
+        }
+    }
+
+    *num_values = n;
+
+    return out;
+}
+
+typedef libpostal_fuzzy_duplicate_status_t (*fuzzy_duplicate_function)(size_t, char **, double *, size_t, char **, double *, libpostal_fuzzy_duplicate_options_t);
+
+static PyObject *py_is_duplicate_fuzzy(PyObject *self, PyObject *args, PyObject *keywords, fuzzy_duplicate_function dupe_func) {
+    PyObject *arg_tokens1;
+    PyObject *arg_scores1;
+    PyObject *arg_tokens2;
+    PyObject *arg_scores2;
+
+    PyObject *arg_languages = Py_None;
+    libpostal_fuzzy_duplicate_options_t options = libpostal_get_default_fuzzy_duplicate_options();
+
+    double needs_review_threshold = options.needs_review_threshold;
+    double likely_dupe_threshold = options.likely_dupe_threshold;
+
+    PyObject *result = Py_None;
+
+    static char *kwlist[] = {"tokens1",
+                             "scores1",
+                             "tokens2",
+                             "scores2",
+                             "languages",
+                             "needs_review_threshold",
+                             "likely_dupe_threshold",
+                             NULL
+                            };
+
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
+                                     "OOOO|Odd:dedupe", kwlist,
+                                     &arg_tokens1,
+                                     &arg_scores1,
+                                     &arg_tokens2,
+                                     &arg_scores2,
+                                     &arg_languages,
+                                     &needs_review_threshold,
+                                     &likely_dupe_threshold
+                                     )) {
+        return 0;
+    }
+
+    if (!PySequence_Check(arg_tokens1) || !PySequence_Check(arg_scores1) || !PySequence_Check(arg_tokens2) || !PySequence_Check(arg_scores2)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "Input tokens and scores must be sequences");
+        return 0;
+    } else if (PySequence_Length(arg_tokens1) != PySequence_Length(arg_scores1)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "Input tokens1 and scores1 arrays must be of equal length");
+        return 0;
+    } else if (PySequence_Length(arg_tokens2) != PySequence_Length(arg_scores2)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "Input tokens2 and scores2 arrays must be of equal length");
+        return 0;
+    }
+
+    size_t num_tokens1 = 0;
+    char **tokens1 = PyObject_to_strings(arg_tokens1, &num_tokens1);
+
+    if (tokens1 == NULL) {
+        return NULL;
+    }
+
+    size_t num_scores1 = 0;
+    double *scores1 = PyObject_to_double_array(arg_scores1, &num_scores1);
+    if (scores1 == NULL) {
+        string_array_destroy(tokens1, num_tokens1);
+        return NULL;
+    }
+
+    size_t num_components1 = num_tokens1;
+
+    size_t num_tokens2 = 0;
+    char **tokens2 = PyObject_to_strings(arg_tokens2, &num_tokens2);
+
+    if (tokens2 == NULL) {
+        string_array_destroy(tokens1, num_tokens1);
+        free(scores1);
+        return NULL;
+    }
+
+    size_t num_scores2 = 0;
+    double *scores2 = PyObject_to_double_array(arg_scores2, &num_scores2);
+    if (scores2 == NULL) {
+        string_array_destroy(tokens1, num_tokens1);
+        free(scores1);
+        string_array_destroy(tokens2, num_tokens2);
+        return NULL;
+    }
+
+    size_t num_components2 = num_tokens2;
+
+    size_t num_languages = 0;
+    char **languages = NULL;
+
+    if (PySequence_Check(arg_languages)) {
+        languages = PyObject_to_strings_max_len(arg_languages, LIBPOSTAL_MAX_LANGUAGE_LEN, &num_languages);
+    }
+
+    if (num_languages > 0 && languages != NULL) {
+        options.num_languages = num_languages;
+        options.languages = languages;
+    }
+
+    libpostal_fuzzy_duplicate_status_t status = dupe_func(num_components1, tokens1, scores1, num_components2, tokens2, scores2, options);
+
+    result = Py_BuildValue("ld", status.status, status.similarity);
+
+    string_array_destroy(tokens1, num_tokens1);
+    free(scores1);
+    string_array_destroy(tokens2, num_tokens2);
+    free(scores2);
+
+    if (languages != NULL) {
+        string_array_destroy(languages, num_languages);
+    }
+
+    return result;
+}
+
+
+static PyObject *py_is_name_duplicate_fuzzy(PyObject *self, PyObject *args, PyObject *keywords) {
+    return py_is_duplicate_fuzzy(self, args, keywords, libpostal_is_name_duplicate_fuzzy);
+}
+
+
+static PyObject *py_is_street_duplicate_fuzzy(PyObject *self, PyObject *args, PyObject *keywords) {
+    return py_is_duplicate_fuzzy(self, args, keywords, libpostal_is_street_duplicate_fuzzy);
+}
 
 static PyMethodDef dedupe_methods[] = {
     {"place_languages", (PyCFunction)py_place_languages, METH_VARARGS, "place_languages(labels, values)"},
@@ -285,10 +457,10 @@ static PyMethodDef dedupe_methods[] = {
     {"is_floor_duplicate", (PyCFunction)py_is_floor_duplicate, METH_VARARGS | METH_KEYWORDS, "is_floor_duplicate(value1, value2, languages=None)"},
     {"is_postal_code_duplicate", (PyCFunction)py_is_postal_code_duplicate, METH_VARARGS | METH_KEYWORDS, "is_postal_code_duplicate(value1, value2, languages=None)"},
     {"is_toponym_duplicate", (PyCFunction)py_is_toponym_duplicate, METH_VARARGS | METH_KEYWORDS, "is_toponym_duplicate(labels1, values1, labels2, values2, languages=None)"},
+    {"is_name_duplicate_fuzzy", (PyCFunction)py_is_name_duplicate_fuzzy, METH_VARARGS | METH_KEYWORDS, "is_name_duplicate_fuzzy(tokens1, scores1, tokens2, scores2, languages=None, **kw)"},
+    {"is_street_duplicate_fuzzy", (PyCFunction)py_is_street_duplicate_fuzzy, METH_VARARGS | METH_KEYWORDS, "is_street_duplicate_fuzzy(tokens1, scores1, tokens2, scores2, languages=None, **kw)"},
     {NULL, NULL},
 };
-
-
 
 #ifdef IS_PY3K
 
