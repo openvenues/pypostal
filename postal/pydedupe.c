@@ -285,7 +285,7 @@ double *PyObject_to_double_array(PyObject *obj, size_t *num_values) {
     Py_ssize_t len = PySequence_Length(obj);
 
     if (len > 0) {
-        out = calloc(len, sizeof(double));
+        out = calloc((size_t)len, sizeof(double));
         if (out == NULL) {
             return NULL;
         }
@@ -297,15 +297,15 @@ double *PyObject_to_double_array(PyObject *obj, size_t *num_values) {
 
             if (PyFloat_Check(item)) {
                 d = PyFloat_AsDouble(item);
-            } else if (PyInt_Check(item)) {
-                long l = PyInt_AsLong(item);
-                d = (double)l;
-            } else if (PyLong_Check(item)) {
-                d = PyLong_AsDouble(item);
+            } else if (PyNumber_Check(item)) {
+                PyObject *f = PyNumber_Float(item);
+                d = PyFloat_AsDouble(f);
+                Py_DECREF(f);
             } else {
                 PyErr_SetString(PyExc_TypeError,
                                 "Scores must be numeric types");
                 free(out);
+                Py_DECREF(seq);
                 return NULL;
             }
 
@@ -316,6 +316,8 @@ double *PyObject_to_double_array(PyObject *obj, size_t *num_values) {
     }
 
     *num_values = n;
+
+    Py_DECREF(seq);
 
     return out;
 }
