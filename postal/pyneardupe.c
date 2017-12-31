@@ -140,6 +140,7 @@ static PyObject *py_near_dupe_hashes(PyObject *self, PyObject *args, PyObject *k
 
     if (near_dupe_hashes != NULL) {
         result = PyObject_from_strings(near_dupe_hashes, num_hashes);
+        string_array_destroy(near_dupe_hashes, num_hashes);
     } else {
         result = Py_None;
         Py_INCREF(Py_None);
