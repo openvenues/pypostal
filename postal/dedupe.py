@@ -9,7 +9,7 @@ class duplicate_status(Enum):
     NON_DUPLICATE = EnumValue(_dedupe.NON_DUPLICATE)
     NEEDS_REVIEW = EnumValue(_dedupe.POSSIBLE_DUPLICATE_NEEDS_REVIEW)
     LIKELY_DUPLICATE = EnumValue(_dedupe.LIKELY_DUPLICATE)
-    EXACT_DUPlICATE = EnumValue(_dedupe.EXACT_DUPLICATE)
+    EXACT_DUPLICATE = EnumValue(_dedupe.EXACT_DUPLICATE)
 
 
 def place_languages(labels, values):
