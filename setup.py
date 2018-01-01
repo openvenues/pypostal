@@ -81,7 +81,9 @@ def main():
                       ),
         ],
         packages=find_packages(),
-        data_files=[('postal', ['postal/pyutils.h'])],
+        package_data={
+            'postal': ['*.h']
+        },
         zip_safe=False,
         url='https://github.com/openvenues/pypostal',
         download_url='https://github.com/openvenues/pypostal/tarball/1.1',
