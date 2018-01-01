@@ -15,7 +15,7 @@ this_dir = os.path.realpath(os.path.dirname(__file__))
 def main():
     setup(
         name='postal',
-        version='1.1.1',
+        version='1.1.2',
         install_requires=[
             'six',
         ],
@@ -86,7 +86,7 @@ def main():
         },
         zip_safe=False,
         url='https://github.com/openvenues/pypostal',
-        download_url='https://github.com/openvenues/pypostal/tarball/1.1',
+        download_url='https://github.com/openvenues/pypostal/tarball/1.1.2',
         description='Python bindings to libpostal for fast international address parsing/normalization',
         license='MIT License',
         maintainer='mapzen.com',
