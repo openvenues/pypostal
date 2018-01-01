@@ -15,7 +15,7 @@ this_dir = os.path.realpath(os.path.dirname(__file__))
 def main():
     setup(
         name='postal',
-        version='1.1.2',
+        version='1.1.3',
         install_requires=[
             'six',
         ],
