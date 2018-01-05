@@ -1,5 +1,6 @@
 #include <Python.h>
 #include <libpostal/libpostal.h>
+#include "pyutils.h"
 
 #if PY_MAJOR_VERSION >= 3
 #define IS_PY3K
@@ -20,7 +21,7 @@ struct module_state {
 
 static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *arg_input;
-    PyObject *arg_languages;
+    PyObject *arg_languages = Py_None;
     libpostal_normalize_options_t options = libpostal_get_default_options();
 
     PyObject *result = NULL;
@@ -67,10 +68,9 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     uint32_t expand_numex = options.expand_numex;
     uint32_t roman_numerals = options.roman_numerals;
 
-    if (!PyArg_ParseTupleAndKeywords(args, keywords,
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
                                      "O|OHIIIIIIIIIIIIIIIII:pyexpand", kwlist,
-                                     &arg_input,
-                                     &arg_languages,
+                                     &arg_input, &arg_languages,
                                      &address_components,
                                      &latin_ascii,
                                      &transliterate,
@@ -113,95 +113,23 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     options.expand_numex = expand_numex;
     options.roman_numerals = roman_numerals;
 
-    PyObject *unistr_input = PyUnicode_FromObject(arg_input);
-    if (unistr_input == NULL) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Input could not be converted to unicode");
-        return 0;
-    }
 
-    char *input = NULL;
-
-    #ifdef IS_PY3K
-        // Python 3 encoding, supported by Python 3.3+
-
-        input = PyUnicode_AsUTF8(unistr_input);
-
-    #else
-        // Python 2 encoding
-
-        PyObject *str_input = PyUnicode_AsEncodedString(unistr_input, "utf-8", "strict");
-        if (str_input == NULL) {
-            PyErr_SetString(PyExc_TypeError,
-                            "Input could not be utf-8 encoded");
-            return 0;
-        }
-
-        input = PyBytes_AsString(str_input);
-    #endif
+    char *input = PyObject_to_string(arg_input);
 
     if (input == NULL) {
-        goto exit_decref_str;
+        return NULL;
     }
 
-    char **languages = NULL;
     size_t num_languages = 0;
+    char **languages = NULL;
 
     if (PySequence_Check(arg_languages)) {
-        PyObject *seq = PySequence_Fast(arg_languages, "Expected a sequence");
-        Py_ssize_t len_languages = PySequence_Length(arg_languages);
+        languages = PyObject_to_strings_max_len(arg_languages, LIBPOSTAL_MAX_LANGUAGE_LEN, &num_languages);
+    }
 
-        if (len_languages > 0) {
-            languages = malloc(len_languages * sizeof(char *));
-            if (languages == NULL) {
-                goto exit_decref_str;
-            }
-
-            char *language = NULL;
-
-            for (int i = 0; i < len_languages; i++) {
-                PyObject *item = PySequence_Fast_GET_ITEM(seq, i);
-
-                language = NULL;
-
-                #ifdef IS_PY3K
-
-                if (PyBytes_Check(item)) {
-                    language = PyBytes_AsString(item);
-                }
-
-                #else
-
-                if (PyString_Check(item)) {
-                    language = PyString_AsString(item);
-                }
-
-                #endif
-
-                if (language != NULL && item != Py_None) {
-                    if (strlen(language) >= LIBPOSTAL_MAX_LANGUAGE_LEN) {
-                        PyErr_SetString(PyExc_TypeError, "language was longer than a language code");
-                        free(languages);
-                        Py_DECREF(seq);
-                        goto exit_decref_str;
-                    }
-                    languages[num_languages] = strdup(language);
-                    num_languages++;
-                }
-
-            }
-
-            if (num_languages > 0) {
-                options.languages = languages;
-                options.num_languages = (int)num_languages;
-            } else {
-                free(languages);
-                languages = NULL;
-            }
-
-        }
-
-        Py_DECREF(seq);
+    if (num_languages > 0 && languages != NULL) {
+        options.num_languages = num_languages;
+        options.languages = languages;
     }
 
     size_t num_expansions = 0;
@@ -214,34 +142,10 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
         free(languages);
     }
 
-    if (expansions == NULL) {
-        goto exit_decref_str;
+    if (expansions != NULL) {
+        result = PyObject_from_strings(expansions, num_expansions);
+        libpostal_expansion_array_destroy(expansions, num_expansions);
     }
-
-    result = PyList_New((Py_ssize_t)num_expansions);
-    if (!result) {
-        goto exit_free_expansions;
-    }
-
-    for (int i = 0; i < num_expansions; i++) {
-        char *expansion = expansions[i];
-        PyObject *u = PyUnicode_DecodeUTF8((const char *)expansion, strlen(expansion), "strict");
-        if (u == NULL) {
-            Py_DECREF(result);
-            goto exit_free_expansions;
-        }
-        // Note: PyList_SetItem steals a reference, so don't worry about DECREF
-        PyList_SetItem(result, (Py_ssize_t)i, u);
-    }
-
-exit_free_expansions:
-    libpostal_expansion_array_destroy(expansions, num_expansions);
-exit_decref_str:
-    #ifndef IS_PY3K
-    Py_XDECREF(str_input);
-    #endif
-exit_decref_unistr:
-    Py_XDECREF(unistr_input);
 
     return result;
 }
