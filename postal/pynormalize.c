@@ -96,7 +96,7 @@ static PyObject *py_normalized_tokens(PyObject *self, PyObject *args)
         }
 
         PyObject *t = PyTuple_New(2);
-        PyObject *py_token_type = PyInt_FromLong(normalized_token.token.type);
+        PyObject *py_token_type = PyLong_FromLong(normalized_token.token.type);
 
         PyTuple_SetItem(t, 0, py_token);
         PyTuple_SetItem(t, 1, py_token_type);
