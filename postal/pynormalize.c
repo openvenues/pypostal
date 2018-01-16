@@ -157,7 +157,7 @@ static struct PyModuleDef module_def = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_normalize(void) {
+PyInit__normalize(void) {
 #else
 #define INITERROR return
 

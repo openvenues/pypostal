@@ -105,7 +105,7 @@ static struct PyModuleDef module_def = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_tokenize(void) {
+PyInit__tokenize(void) {
 #else
 #define INITERROR return
 
