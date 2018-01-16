@@ -1,3 +1,5 @@
+import six
+
 
 class EnumValue(object):
     def __init__(self, value, name=None):
@@ -27,7 +29,7 @@ class EnumMeta(type):
     def __init__(self, name, bases, dict_):
         self.registry = self.registry.copy()
         self.name_registry = self.name_registry.copy()
-        for k, v in dict_.iteritems():
+        for k, v in six.iteritems(dict_):
             if isinstance(v, EnumValue) and v not in self.registry:
                 if v.name is None:
                     v.name = k
@@ -42,8 +44,7 @@ class EnumMeta(type):
         return self.registry[key]
 
 
-class Enum(object):
-    __metaclass__ = EnumMeta
+class Enum(six.with_metaclass(EnumMeta, object)):
     registry = {}
     name_registry = {}
 

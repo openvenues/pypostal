@@ -120,7 +120,7 @@ static PyObject *py_is_duplicate(PyObject *self, PyObject *args, PyObject *keywo
 
     libpostal_duplicate_status_t status = dupe_func(value1, value2, options);
 
-    result = PyInt_FromSsize_t((ssize_t)status);
+    result = PyLong_FromSsize_t((ssize_t)status);
 
     if (languages != NULL) {
         string_array_destroy(languages, num_languages);
@@ -260,7 +260,7 @@ static PyObject *py_is_toponym_duplicate(PyObject *self, PyObject *args, PyObjec
 
     libpostal_duplicate_status_t status = libpostal_is_toponym_duplicate(num_components1, labels1, values1, num_components2, labels2, values2, options);
 
-    result = PyInt_FromSsize_t((ssize_t)status);
+    result = PyLong_FromSsize_t((ssize_t)status);
 
     string_array_destroy(labels1, num_labels1);
     string_array_destroy(values1, num_values1);

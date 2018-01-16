@@ -31,7 +31,7 @@ sudo yum install curl autoconf automake libtool python-devel pkgconfig
 ```
 **On Mac OSX**
 ```
-sudo brew install curl autoconf automake libtool pkg-config
+brew install curl autoconf automake libtool pkg-config
 ```
 
 **Installing libpostal**

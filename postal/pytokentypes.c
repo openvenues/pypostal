@@ -50,7 +50,7 @@ static struct PyModuleDef module_def = {
 #define INITERROR return NULL
 
 PyObject *
-PyInit_token_types(void) {
+PyInit__token_types(void) {
 #else
 #define INITERROR return
 
