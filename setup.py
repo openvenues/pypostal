@@ -12,10 +12,13 @@ from distutils.errors import DistutilsArgError
 this_dir = os.path.realpath(os.path.dirname(__file__))
 
 
+VERSION = '1.1.5'
+
+
 def main():
     setup(
         name='postal',
-        version='1.1.4',
+        version=VERSION,
         install_requires=[
             'six',
         ],
@@ -79,7 +82,7 @@ def main():
         },
         zip_safe=False,
         url='https://github.com/openvenues/pypostal',
-        download_url='https://github.com/openvenues/pypostal/tarball/1.1.3',
+        download_url='https://github.com/openvenues/pypostal/tarball/{}'.format(VERSION),
         description='Python bindings to libpostal for fast international address parsing/normalization',
         license='MIT License',
         maintainer='mapzen.com',
