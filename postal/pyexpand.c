@@ -224,23 +224,21 @@ init_expand(void) {
                         "Error loading libpostal");
     }
 
-    PyModule_AddIntConstant(module, "ADDRESS_NONE", LIBPOSTAL_ADDRESS_NONE);
-    PyModule_AddIntConstant(module, "ADDRESS_ANY", LIBPOSTAL_ADDRESS_ANY);
-    PyModule_AddIntConstant(module, "ADDRESS_NAME", LIBPOSTAL_ADDRESS_NAME);
-    PyModule_AddIntConstant(module, "ADDRESS_HOUSE_NUMBER", LIBPOSTAL_ADDRESS_HOUSE_NUMBER);
-    PyModule_AddIntConstant(module, "ADDRESS_STREET", LIBPOSTAL_ADDRESS_STREET);
-    PyModule_AddIntConstant(module, "ADDRESS_UNIT", LIBPOSTAL_ADDRESS_UNIT);
-    PyModule_AddIntConstant(module, "ADDRESS_LEVEL", LIBPOSTAL_ADDRESS_LEVEL);
-    PyModule_AddIntConstant(module, "ADDRESS_STAIRCASE", LIBPOSTAL_ADDRESS_STAIRCASE);
-    PyModule_AddIntConstant(module, "ADDRESS_ENTRANCE", LIBPOSTAL_ADDRESS_ENTRANCE);
-
-    PyModule_AddIntConstant(module, "ADDRESS_CATEGORY", LIBPOSTAL_ADDRESS_CATEGORY);
-    PyModule_AddIntConstant(module, "ADDRESS_NEAR", LIBPOSTAL_ADDRESS_NEAR);
-
-    PyModule_AddIntConstant(module, "ADDRESS_TOPONYM", LIBPOSTAL_ADDRESS_TOPONYM);
-    PyModule_AddIntConstant(module, "ADDRESS_POSTAL_CODE", LIBPOSTAL_ADDRESS_POSTAL_CODE);
-    PyModule_AddIntConstant(module, "ADDRESS_PO_BOX", LIBPOSTAL_ADDRESS_PO_BOX);
-    PyModule_AddIntConstant(module, "ADDRESS_ALL", LIBPOSTAL_ADDRESS_ALL);
+    PyModule_AddObject(module, "ADDRESS_NONE", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_NONE));
+    PyModule_AddObject(module, "ADDRESS_ANY", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_ANY));
+    PyModule_AddObject(module, "ADDRESS_NAME", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_NAME));
+    PyModule_AddObject(module, "ADDRESS_HOUSE_NUMBER", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_HOUSE_NUMBER));
+    PyModule_AddObject(module, "ADDRESS_STREET", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_STREET));
+    PyModule_AddObject(module, "ADDRESS_UNIT", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_UNIT));
+    PyModule_AddObject(module, "ADDRESS_LEVEL", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_LEVEL));
+    PyModule_AddObject(module, "ADDRESS_STAIRCASE", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_STAIRCASE));
+    PyModule_AddObject(module, "ADDRESS_ENTRANCE", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_ENTRANCE));
+    PyModule_AddObject(module, "ADDRESS_CATEGORY", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_CATEGORY));
+    PyModule_AddObject(module, "ADDRESS_NEAR", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_NEAR));
+    PyModule_AddObject(module, "ADDRESS_TOPONYM", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_TOPONYM));
+    PyModule_AddObject(module, "ADDRESS_POSTAL_CODE", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_POSTAL_CODE));
+    PyModule_AddObject(module, "ADDRESS_PO_BOX", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_PO_BOX));
+    PyModule_AddObject(module, "ADDRESS_ALL", PyLong_FromUnsignedLongLong(LIBPOSTAL_ADDRESS_ALL));
 
 #ifndef IS_PY3K
     Py_AtExit(&cleanup_libpostal);

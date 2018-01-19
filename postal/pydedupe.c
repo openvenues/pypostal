@@ -531,11 +531,11 @@ init_dedupe(void) {
                         "Error loading libpostal");
     }
 
-    PyModule_AddIntConstant(module, "NULL_DUPLICATE_STATUS", LIBPOSTAL_NULL_DUPLICATE_STATUS);
-    PyModule_AddIntConstant(module, "NON_DUPLICATE", LIBPOSTAL_NON_DUPLICATE);
-    PyModule_AddIntConstant(module, "POSSIBLE_DUPLICATE_NEEDS_REVIEW", LIBPOSTAL_POSSIBLE_DUPLICATE_NEEDS_REVIEW);
-    PyModule_AddIntConstant(module, "LIKELY_DUPLICATE", LIBPOSTAL_LIKELY_DUPLICATE);
-    PyModule_AddIntConstant(module, "EXACT_DUPLICATE", LIBPOSTAL_EXACT_DUPLICATE);
+    PyModule_AddObject(module, "NULL_DUPLICATE_STATUS", PyLong_FromSsize_t(LIBPOSTAL_NULL_DUPLICATE_STATUS));
+    PyModule_AddObject(module, "NON_DUPLICATE", PyLong_FromSsize_t(LIBPOSTAL_NON_DUPLICATE));
+    PyModule_AddObject(module, "POSSIBLE_DUPLICATE_NEEDS_REVIEW", PyLong_FromSsize_t(LIBPOSTAL_POSSIBLE_DUPLICATE_NEEDS_REVIEW));
+    PyModule_AddObject(module, "LIKELY_DUPLICATE", PyLong_FromSsize_t(LIBPOSTAL_LIKELY_DUPLICATE));
+    PyModule_AddObject(module, "EXACT_DUPLICATE", PyLong_FromSsize_t(LIBPOSTAL_EXACT_DUPLICATE));
 
 #ifndef IS_PY3K
     Py_AtExit(&cleanup_libpostal);
