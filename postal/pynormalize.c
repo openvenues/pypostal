@@ -19,13 +19,29 @@ struct module_state {
     static struct module_state _state;
 #endif
 
-static PyObject *py_normalize_string(PyObject *self, PyObject *args) 
+static PyObject *py_normalize_string(PyObject *self, PyObject *args, PyObject *keywords)
 {
     PyObject *arg1;
     uint64_t options;
-    if (!PyArg_ParseTuple(args, "OK:normalize", &arg1, &options)) {
+    PyObject *arg_languages = Py_None;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = {"s",
+                             "options",
+                             "languages",
+                             NULL
+                            };
+
+    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
+                                     "OK|O:normalize", kwlist,
+                                     &arg1,
+                                     &options,
+                                     &arg_languages
+                                     )) {
         return 0;
     }
+
 
     char *input = PyObject_to_string(arg1);
 
@@ -33,35 +49,60 @@ static PyObject *py_normalize_string(PyObject *self, PyObject *args)
         return 0;
     }
 
-    char *normalized = libpostal_normalize_string(input, options);
+    size_t num_languages = 0;
+    char **languages = NULL;
+
+    if (PySequence_Check(arg_languages)) {
+        languages = PyObject_to_strings_max_len(arg_languages, LIBPOSTAL_MAX_LANGUAGE_LEN, &num_languages);
+    }
+
+    char *normalized = libpostal_normalize_string_languages(input, options, num_languages, languages);
 
     free(input);
     if (normalized == NULL) {
-        return 0;
+        goto exit_free_languages;
     }
 
-    PyObject *result = PyUnicode_DecodeUTF8((const char *)normalized, strlen(normalized), "strict");
+    result = PyUnicode_DecodeUTF8((const char *)normalized, strlen(normalized), "strict");
     free(normalized);
     if (result == NULL) {
             PyErr_SetString(PyExc_ValueError,
                             "Result could not be utf-8 decoded");
-            return 0;
+            goto exit_free_languages;
     }
 
+exit_free_languages:
+    string_array_destroy(languages, num_languages);
     return result;
 }
 
 
-static PyObject *py_normalized_tokens(PyObject *self, PyObject *args) 
+static PyObject *py_normalized_tokens(PyObject *self, PyObject *args, PyObject *keywords)
 {
     PyObject *arg1;
     uint64_t string_options = LIBPOSTAL_NORMALIZE_DEFAULT_STRING_OPTIONS;
     uint64_t token_options = LIBPOSTAL_NORMALIZE_DEFAULT_TOKEN_OPTIONS;
     uint32_t arg_whitespace = 0;
+    PyObject *arg_languages = Py_None;
 
     PyObject *result = NULL;
 
-    if (!PyArg_ParseTuple(args, "O|KKI:normalize", &arg1, &string_options, &token_options, &arg_whitespace)) {
+    static char *kwlist[] = {"s",
+                             "string_options",
+                             "token_options",
+                             "whitespace",
+                             "languages",
+                             NULL
+                            };
+
+    if (!PyArg_ParseTupleAndKeywords(args, keywords,
+                                     "O|KKIO:normalize", kwlist,
+                                     &arg1,
+                                     &string_options,
+                                     &token_options,
+                                     &arg_whitespace,
+                                     &arg_languages
+                                     )) {
         return 0;
     }
 
@@ -73,12 +114,19 @@ static PyObject *py_normalized_tokens(PyObject *self, PyObject *args)
 
     bool whitespace = arg_whitespace;
 
+    size_t num_languages = 0;
+    char **languages = NULL;
+
+    if (PySequence_Check(arg_languages)) {
+        languages = PyObject_to_strings_max_len(arg_languages, LIBPOSTAL_MAX_LANGUAGE_LEN, &num_languages);
+    }
+
     size_t num_tokens;
-    libpostal_normalized_token_t *normalized_tokens = libpostal_normalized_tokens(input, string_options, token_options, whitespace, &num_tokens);
+    libpostal_normalized_token_t *normalized_tokens = libpostal_normalized_tokens_languages(input, string_options, token_options, whitespace, num_languages, languages, &num_tokens);
     free(input);
 
     if (normalized_tokens == NULL) {
-        return 0;
+        goto exit_free_normalize_languages;
     }
 
     result = PyList_New((Py_ssize_t)num_tokens);
@@ -105,25 +153,21 @@ static PyObject *py_normalized_tokens(PyObject *self, PyObject *args)
         PyList_SetItem(result, (Py_ssize_t)i, t);
     }
 
-    for (size_t i = 0; i < num_tokens; i++) {
-        free(normalized_tokens[i].str);
-    }
-    free(normalized_tokens);
-
-
-    return result;
 exit_free_normalized_tokens:
     for (size_t i = 0; i < num_tokens; i++) {
         free(normalized_tokens[i].str);
     }
     free(normalized_tokens);
-    return 0;
+exit_free_normalize_languages:
+    string_array_destroy(languages, num_languages);
+
+    return result;
 }
 
 
 static PyMethodDef normalize_methods[] = {
-    {"normalize_string", (PyCFunction)py_normalize_string, METH_VARARGS, "normalize_string(input, options)"},
-    {"normalized_tokens", (PyCFunction)py_normalized_tokens, METH_VARARGS, "normalize_token(input, string_options, token_options, whitespace)"},
+    {"normalize_string", (PyCFunction)py_normalize_string, METH_VARARGS | METH_KEYWORDS, "normalize_string(input, options, langauges)"},
+    {"normalized_tokens", (PyCFunction)py_normalized_tokens, METH_VARARGS | METH_KEYWORDS, "normalize_token(input, string_options, token_options, whitespace, languages)"},
     {NULL, NULL},
 };
 
@@ -197,6 +241,7 @@ init_normalize(void) {
     PyModule_AddObject(module, "NORMALIZE_STRING_TRIM", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_STRING_TRIM));
     PyModule_AddObject(module, "NORMALIZE_STRING_REPLACE_HYPHENS", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_STRING_REPLACE_HYPHENS));
     PyModule_AddObject(module, "NORMALIZE_STRING_SIMPLE_LATIN_ASCII", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_STRING_SIMPLE_LATIN_ASCII));
+    PyModule_AddObject(module, "NORMALIZE_STRING_REPLACE_NUMEX", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_STRING_REPLACE_NUMEX));
 
 
     PyModule_AddObject(module, "NORMALIZE_TOKEN_REPLACE_HYPHENS", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_TOKEN_REPLACE_HYPHENS));

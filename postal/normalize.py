@@ -14,8 +14,10 @@ NORMALIZE_STRING_LOWERCASE = _normalize.NORMALIZE_STRING_LOWERCASE
 NORMALIZE_STRING_TRIM = _normalize.NORMALIZE_STRING_TRIM
 NORMALIZE_STRING_REPLACE_HYPHENS = _normalize.NORMALIZE_STRING_REPLACE_HYPHENS
 NORMALIZE_STRING_SIMPLE_LATIN_ASCII = _normalize.NORMALIZE_STRING_SIMPLE_LATIN_ASCII
+NORMALIZE_STRING_REPLACE_NUMEX = _normalize.NORMALIZE_STRING_REPLACE_NUMEX
 
 DEFAULT_STRING_OPTIONS = _normalize.NORMALIZE_DEFAULT_STRING_OPTIONS
+STRING_OPTIONS_NUMEX = _normalize.NORMALIZE_DEFAULT_STRING_OPTIONS | NORMALIZE_STRING_REPLACE_NUMEX
 
 # Token options
 NORMALIZE_TOKEN_REPLACE_HYPHENS = _normalize.NORMALIZE_TOKEN_REPLACE_HYPHENS
@@ -47,14 +49,15 @@ def remove_parens(tokens):
     return new_tokens
 
 
-def normalize_string(s, string_options=DEFAULT_STRING_OPTIONS):
+def normalize_string(s, string_options=DEFAULT_STRING_OPTIONS, languages=None):
     s = safe_decode(s)
-    return _normalize.normalize_string(s, string_options)
+    return _normalize.normalize_string(s, string_options, languages=languages)
 
 
 def normalized_tokens(s, string_options=DEFAULT_STRING_OPTIONS,
                       token_options=DEFAULT_TOKEN_OPTIONS,
-                      strip_parentheticals=True, whitespace=False):
+                      strip_parentheticals=True, whitespace=False,
+                      languages=None):
     '''
     Normalizes a string, tokenizes, and normalizes each token
     with string and token-level options.
@@ -67,7 +70,7 @@ def normalized_tokens(s, string_options=DEFAULT_STRING_OPTIONS,
         normalized_tokens(u'St.-Barthélemy')
     '''
     s = safe_decode(s)
-    normalized_tokens = _normalize.normalized_tokens(s, string_options, token_options, whitespace)
+    normalized_tokens = _normalize.normalized_tokens(s, string_options, token_options, whitespace, languages=languages)
 
     if strip_parentheticals:
         normalized_tokens = remove_parens(normalized_tokens)
