@@ -54,6 +54,33 @@ To install the Python library, just run:
 pip install postal
 ```
 
+**Installing libpostal on Windows**
+
+Install [msys2](http://msys2.org) and launch a shell using the `MSYS2 MingW 64-bit` start menu option, **not** the usual `MSYS2 MSYS` option.
+This is important because we don't want our `libpostal.dll` to [link to](https://www.davidegrayson.com/windev/msys2/) `msys-2.0.dll` (Python seems to hang if you load this DLL).
+
+Then:
+```
+pacman -S autoconf automake curl git make libtool gcc mingw-w64-x86_64-gcc
+git clone https://github.com/openvenues/libpostal
+cd libpostal
+cp -rf windows/* ./
+./bootstrap.sh
+./configure --datadir=[...some dir with a few GB of space...]
+make
+make install
+mkdir headers && cp -r /usr/include/libpostal/ headers/
+```
+
+Now start a command prompt which has access to the Microsoft toolchain. This can be done by e.g. installing the [Windows 10 SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk) and then running the ``x64 Native Tools Command Prompt``.
+
+Assuming your MSYS and Python are installed in some standard locations, you can use this command prompt to build+install the Python library like so:
+```
+lib.exe /def:libpostal.def /out:postal.lib /machine:x64
+pip install postal --global-option=build_ext --global-option="-I[...libpostal checkout...]\headers" --global-option="-L[...libpostal checkout...]"
+copy src\.libs\libpostal-1.dll "C:\Python36\Lib\site-packages\postal\libpostal.dll"
+```
+
 Compatibility
 -------------
 
