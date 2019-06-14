@@ -11,6 +11,12 @@ struct module_state {
 };
 
 
+typedef struct language_classifier_response {
+    Py_ssize_t num_languages;
+    char **languages;
+    double *probs;
+} language_classifier_response_t;
+
 #ifdef IS_PY3K
     #define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
 #else
@@ -39,67 +45,45 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
         return NULL;
     }
 
+    language_classifier_response_t *response = classify_languages(input);
 
+    if (response == NULL) {
+        goto exit_free_input;
+    }
 
-//    if (!address_dictionary_module_setup(NULL) || !transliteration_module_setup(NULL) || !language_classifier_module_setup(dir)) {
-//        log_error("Could not load language classifiers\n");
-//        exit(EXIT_FAILURE);
-//    }
+    result = PyList_New((Py_ssize_t)response->num_languages);
+    if (!result) {
+        goto exit_destroy_response;
+    }
 
-//    libpostal_address_parser_response_t *parsed = libpostal_parse_address(input, options);
-//    if (parsed == NULL) {
-//        goto exit_free_country;
-//    }
-//
-//    result = PyList_New((Py_ssize_t)parsed->num_components);
-//    if (!result) {
-//        goto exit_destroy_response;
-//    }
-//
-//    for (int i = 0; i < parsed->num_components; i++) {
-//        char *component = parsed->components[i];
-//        char *label = parsed->labels[i];
-//        PyObject *component_unicode = PyUnicode_DecodeUTF8((const char *)component, strlen(component), "strict");
-//        if (component_unicode == NULL) {
-//            Py_DECREF(result);
-//            goto exit_destroy_response;
-//        }
-//
-//        PyObject *label_unicode = PyUnicode_DecodeUTF8((const char *)label, strlen(label), "strict");
-//        if (label_unicode == NULL) {
-//            Py_DECREF(component_unicode);
-//            Py_DECREF(result);
-//            goto exit_destroy_response;
-//        }
-//        PyObject *tuple = Py_BuildValue("(OO)", component_unicode, label_unicode);
-//        if (tuple == NULL) {
-//            Py_DECREF(component_unicode);
-//            Py_DECREF(label_unicode);
-//            goto exit_destroy_response;
-//        }
-//
-//        // Note: PyList_SetItem steals a reference, so don't worry about DECREF
-//        PyList_SetItem(result, (Py_ssize_t)i, tuple);
-//
-//        Py_DECREF(component_unicode);
-//        Py_DECREF(label_unicode);
-//    }
-//
-//    exit_destroy_response:
-//        libpostal_address_parser_response_destroy(parsed);
-//    exit_free_country:
-//        if (country != NULL) {
-//            free(country);
-//        }
-//    exit_free_language:
-//        if (language != NULL) {
-//            free(language);
-//        }
-//    exit_free_input:
-//        if (input != NULL) {
-//            free(input);
-//        }
-//        return result;
+    for (int i = 0; i < response->num_languages; i++) {
+        char *language = response->languages[i];
+        double prob = response->probs[i];
+        PyObject *language_unicode = PyUnicode_DecodeUTF8((const char *)language, strlen(language), "strict");
+        if (language_unicode == NULL) {
+            Py_DECREF(result);
+            goto exit_destroy_response;
+        }
+
+        PyObject *tuple = Py_BuildValue("(OO)", language_unicode, prob);
+        if (tuple == NULL) {
+            Py_DECREF(language_unicode);
+            goto exit_destroy_response;
+        }
+
+        // Note: PyList_SetItem steals a reference, so don't worry about DECREF
+        PyList_SetItem(result, (Py_ssize_t)i, tuple);
+
+        Py_DECREF(language_unicode);
+    }
+
+    exit_destroy_response:
+        language_classifier_response_destroy(response);
+    exit_free_input:
+        if (input != NULL) {
+            free(input);
+        }
+        return result;
 }
 
 static PyMethodDef langclassifier_methods[] = {
@@ -117,7 +101,7 @@ static int langclassifier_traverse(PyObject *m, visitproc visit, void *arg) {
 
 static int langclassifier_clear(PyObject *m) {
     Py_CLEAR(GETSTATE(m)->error);
-//    libpostal_teardown();
+    libpostal_teardown();
     libpostal_teardown_language_classifier();
     return 0;
 }
@@ -142,12 +126,12 @@ PyInit__langclassifier(void) {
 
 #define INITERROR return
 
-//void cleanup_libpostal(void) {
-//    libpostal_teardown();
-//    libpostal_teardown_parser();
-//}
+void cleanup_libpostal(void) {
+    libpostal_teardown();
+    libpostal_teardown_language_classifier();
+}
 
-void init_parser(void) {
+void init_langclassifier(void) {
     #endif
 
     #ifdef IS_PY3K
@@ -167,7 +151,8 @@ void init_parser(void) {
             INITERROR;
         }
 
-        if (!libpostal_setup() || !libpostal_setup_language_classifier()) {
+
+        if (!libpostal_setup() || libpostal_setup_language_classifier()) {
             PyErr_SetString(PyExc_TypeError,
                             "Error loading libpostal data");
         }
