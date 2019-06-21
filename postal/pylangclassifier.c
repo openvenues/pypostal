@@ -30,12 +30,7 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
 
     PyObject *result = NULL;
 
-    static char *kwlist[] = {"address", NULL};
-
-
-    if (!PyArg_ParseTupleAndKeywords(args, keywords, 
-                                     "O|OO:pyparser", kwlist,
-                                     &arg_input)) {
+    if (!PyArg_ParseTuple(args, "O:pylangclassifier", &arg_input)) {
         return 0;
     }
 
@@ -45,7 +40,7 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
         return NULL;
     }
 
-    language_classifier_response_t *response = classify_languages(input);
+    libpostal_language_classifier_response_t *response = libpostal_classify_language(input);
 
     if (response == NULL) {
         goto exit_free_input;
@@ -65,7 +60,7 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
             goto exit_destroy_response;
         }
 
-        PyObject *tuple = Py_BuildValue("(OO)", language_unicode, prob);
+        PyObject *tuple = Py_BuildValue("(Od)", language_unicode, prob);
         if (tuple == NULL) {
             Py_DECREF(language_unicode);
             goto exit_destroy_response;
@@ -78,7 +73,7 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
     }
 
     exit_destroy_response:
-        language_classifier_response_destroy(response);
+        libpostal_language_classifier_response_destroy(response);
     exit_free_input:
         if (input != NULL) {
             free(input);
@@ -152,7 +147,7 @@ void init_langclassifier(void) {
         }
 
 
-        if (!libpostal_setup() || libpostal_setup_language_classifier()) {
+        if (!libpostal_setup() || !libpostal_setup_language_classifier()) {
             PyErr_SetString(PyExc_TypeError,
                             "Error loading libpostal data");
         }
@@ -166,4 +161,3 @@ void init_langclassifier(void) {
         return module;
     #endif
 }
-
