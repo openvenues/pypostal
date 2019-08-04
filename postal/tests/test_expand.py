@@ -4,11 +4,18 @@
 from __future__ import unicode_literals
 
 import unittest
-from postal.expand import expand_address
+from postal.expand import *
 
 
 class TestExpand(unittest.TestCase):
     """Test expansions."""
+
+    def contained_in_root_expansions(self, address, output, **kw):
+        expansions = expand_address_root(address, **kw)
+        self.assertTrue(expansions)
+
+        expansions = set(expansions)
+        self.assertTrue(output in expansions)
 
     def contained_in_expansions(self, address, output, **kw):
         """Test whether an expansion contains a particular output."""
@@ -53,6 +60,10 @@ class TestExpand(unittest.TestCase):
         self.contained_in_expansions('123 Dr. MLK Jr. Dr.', '123 doctor martin luther king junior drive')
 
         self.has_exact_expansions('120 Malcolm X Blvd', ['120 malcolm x boulevard'], roman_numerals=False)
+
+    def test_root_expansions(self):
+        self.contained_in_root_expansions("E 106TH ST", "106", address_components=ADDRESS_STREET | ADDRESS_ANY, languages=['en'])
+        self.contained_in_root_expansions("PARK AVE", "park", address_components=ADDRESS_STREET | ADDRESS_ANY, languages=['en'])
 
 if __name__ == '__main__':
     unittest.main()
