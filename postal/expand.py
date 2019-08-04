@@ -53,6 +53,11 @@ def expand_address(address, languages=None, **kw):
     address = safe_decode(address, 'utf-8')
     return _expand.expand_address(address, languages=languages, **kw)
 
+
+def expand_address_root(address, languages=None, **kw):
+    return expand_address(address, languages=languages, root=True, **kw)
+
+
 # Constants for address components
 ADDRESS_NONE = _expand.ADDRESS_NONE
 ADDRESS_ANY = _expand.ADDRESS_ANY

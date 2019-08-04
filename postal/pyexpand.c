@@ -46,6 +46,7 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
                              "delete_apostrophes",
                              "expand_numex",
                              "roman_numerals",
+                             "root",
                              NULL
                             };
 
@@ -67,9 +68,10 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     uint32_t delete_apostrophes = options.delete_apostrophes;
     uint32_t expand_numex = options.expand_numex;
     uint32_t roman_numerals = options.roman_numerals;
+    uint32_t root_expansions = 0;
 
     if (!PyArg_ParseTupleAndKeywords(args, keywords, 
-                                     "O|OHIIIIIIIIIIIIIIIII:pyexpand", kwlist,
+                                     "O|OHIIIIIIIIIIIIIIIIII:pyexpand", kwlist,
                                      &arg_input, &arg_languages,
                                      &address_components,
                                      &latin_ascii,
@@ -88,7 +90,8 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
                                      &drop_english_possessives,
                                      &delete_apostrophes,
                                      &expand_numex,
-                                     &roman_numerals
+                                     &roman_numerals,
+                                     &root_expansions
                                      )) {
         return 0;
     }
@@ -133,7 +136,12 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
     }
 
     size_t num_expansions = 0;
-    char **expansions = libpostal_expand_address(input, options, &num_expansions);
+    char **expansions = NULL;
+    if (!root_expansions) {
+        expansions = libpostal_expand_address(input, options, &num_expansions);
+    } else {
+        expansions = libpostal_expand_address_root(input, options, &num_expansions);
+    }
 
     if (languages != NULL) {
         for (int i = 0; i < num_languages; i++) {
