@@ -225,9 +225,12 @@ init_near_dupe(void) {
         INITERROR;
     }
 
-    if (!libpostal_setup() || !libpostal_setup_language_classifier()) {
-        PyErr_SetString(PyExc_TypeError,
-                        "Error loading libpostal");
+   char* datadir = getenv("LIBPOSTAL_DATA_DIR");
+
+    if ((datadir!=NULL) && (!libpostal_setup_datadir(datadir) || !libpostal_setup_language_classifier_datadir(datadir)) ||
+        (!libpostal_setup() || !libpostal_setup_language_classifier())) {
+            PyErr_SetString(PyExc_TypeError,
+                            "Error loading libpostal");
     }
 
 #ifndef IS_PY3K

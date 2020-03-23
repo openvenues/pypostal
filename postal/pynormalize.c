@@ -225,11 +225,13 @@ init_normalize(void) {
         INITERROR;
     }
 
-    if (!libpostal_setup()) {
-        PyErr_SetString(PyExc_RuntimeError,
-                        "Could not load libpostal");
-        Py_DECREF(module);
-        INITERROR;
+   char* datadir = getenv("LIBPOSTAL_DATA_DIR");
+
+    if ((datadir!=NULL && !libpostal_setup_datadir(datadir)) || !libpostal_setup()) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "Could not load libpostal");
+            Py_DECREF(module);
+            INITERROR;
     }
 
     PyModule_AddObject(module, "NORMALIZE_STRING_LATIN_ASCII", PyLong_FromUnsignedLongLong(LIBPOSTAL_NORMALIZE_STRING_LATIN_ASCII));
