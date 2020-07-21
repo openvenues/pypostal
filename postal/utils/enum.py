@@ -9,11 +9,41 @@ class EnumValue(object):
     def __hash__(self):
         return self.value
 
-    def __cmp__(self, other):
+    def __lt__(self, other):
         if isinstance(other, EnumValue):
-            return self.value.__cmp__(other.value)
+            return self.value.__lt__(other.value)
         else:
-            return self.value.__cmp__(other)
+            return self.value.__lt__(other)
+
+    def __gt__(self, other):
+        if isinstance(other, EnumValue):
+            return self.value.__gt__(other.value)
+        else:
+            return self.value.__gt__(other)
+
+    def __le__(self, other):
+        if isinstance(other, EnumValue):
+            return self.value.__le__(other.value)
+        else:
+            return self.value.__le__(other)
+
+    def __ge__(self, other):
+        if isinstance(other, EnumValue):
+            return self.value.__ge__(other.value)
+        else:
+            return self.value.__ge__(other)
+
+    def __ne__(self, other):
+        if isinstance(other, EnumValue):
+            return self.value.__ne__(other.value)
+        else:
+            return self.value.__ne__(other)
+
+    def __eq__(self, other):
+        if isinstance(other, EnumValue):
+            return self.value.__eq__(other.value)
+        else:
+            return self.value.__eq__(other)
 
     def __unicode__(self):
         return self.name
