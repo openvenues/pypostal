@@ -40,7 +40,7 @@ static PyObject *py_classify_lang_address(PyObject *self, PyObject *args, PyObje
         return NULL;
     }
 
-    libpostal_language_classifier_response_t *response = libpostal_classify_language(input);
+    language_classifier_response_t *response = libpostal_classify_language(input);
 
     if (response == NULL) {
         goto exit_free_input;
@@ -132,7 +132,7 @@ void init_langclassifier(void) {
     #ifdef IS_PY3K
         PyObject *module = PyModule_Create(&module_def);
     #else
-        PyObject *module = Py_InitModule("_langclassifier", parser_methods);
+        PyObject *module = Py_InitModule("_langclassifier", langclassifier_methods);
     #endif
 
         if (module == NULL) {
