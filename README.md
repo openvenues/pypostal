@@ -44,7 +44,7 @@ git clone https://github.com/openvenues/libpostal
 cd libpostal
 ./bootstrap.sh
 ./configure --datadir=[...some dir with a few GB of space...]
-make
+make -j4
 sudo make install
 
 # On Linux it's probably a good idea to run
