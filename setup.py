@@ -9,10 +9,8 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.install import install
 from distutils.errors import DistutilsArgError
 
-this_dir = os.path.realpath(os.path.dirname(__file__))
-
-
-VERSION = '1.1.9'
+THIS_DIR = os.path.realpath(os.path.dirname(__file__))
+VERSION = '1.2.0.dev0'
 
 
 def main():
@@ -21,9 +19,7 @@ def main():
         version=VERSION,
         install_requires=[
             'six',
-        ],
-        setup_requires=[
-            'nose>=1.0'
+            'appdirs==1.4.*',
         ],
         ext_modules=[
             Extension('postal._expand',
@@ -92,11 +88,11 @@ def main():
             'Intended Audience :: Information Technology',
             'License :: OSI Approved :: MIT License',
             'Programming Language :: C',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.6',
+            'Programming Language :: Python :: 3.7',
+            'Programming Language :: Python :: 3.8',
+            'Programming Language :: Python :: 3.9',
+            'Programming Language :: Python :: 3.10',
             'Operating System :: MacOS :: MacOS X',
             'Operating System :: POSIX :: Linux',
             'Topic :: Text Processing :: Linguistic',

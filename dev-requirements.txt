@@ -1,0 +1,10 @@
+pytest == 6.2.*
+tox == 3.24.*
+tox-pyenv
+wheel
+delocate
+
+# Nose hasn't seen a release in ~5 years. It also doesn't work with Python 3.10
+# since it references a removed class:
+#   "AttributeError: module 'collections' has no attribute 'Callable'"
+# nose >= 1.0
