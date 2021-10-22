@@ -24,6 +24,7 @@ var/
 .installed.cfg
 *.egg
 wheelhouse/
+.python-version
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
