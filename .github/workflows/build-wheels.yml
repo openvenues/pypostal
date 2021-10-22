@@ -47,10 +47,10 @@ jobs:
           --disable-data-download
         sudo make install
 
-    - name: Build wheels
-      run: python -m cibuildwheel --output-dir wheelhouse
-    - run: |
-        ls -l wheelhouse/
+    # - name: Build wheels
+    #   run: python -m cibuildwheel --output-dir wheelhouse
+    # - run: |
+    #     ls -l wheelhouse/
 
     # - name: Build libpostal
     #   run: |
