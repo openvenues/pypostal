@@ -21,6 +21,7 @@ jobs:
           # - macos-10.15
     env:
       LIBPOSTAL_GIT_TAG: "9c975972985b54491e756efd70e416f18ff97958"
+      LIBPOSTAL_DEPS_DIR: "${{ env.HOME }}/deps"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
@@ -44,13 +45,18 @@ jobs:
         ./bootstrap.sh
         ./configure \
           --datadir="$(pwd)/datadir" \
+          --prefix="${{ env.LIBPOSTAL_DEPS_DIR }}" \
+          --bindir="${{ env.LIBPOSTAL_DEPS_DIR }}" \
           --disable-data-download
         sudo make install
 
-    # - name: Build wheels
-    #   run: python -m cibuildwheel --output-dir wheelhouse
-    # - run: |
-    #     ls -l wheelhouse/
+    - name: Build wheels
+      env:
+        CFLAGS: "-I${{ env.LIBPOSTAL_DEPS_DIR }}/include"
+        LDFLAGS: "-L${{ env.LIBPOSTAL_DEPS_DIR }}/lib"
+      run: python -m cibuildwheel --output-dir wheelhouse
+    - run: |
+        ls -l wheelhouse/
 
     # - name: Build libpostal
     #   run: |
