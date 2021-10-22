@@ -7,13 +7,11 @@ DEPS_DIR="$THIS_DIR/deps"
 ls -l /opt/python/
 
 PYBINS=(
-  "/opt/python/cp27-cp27m/bin"
-  # Skip the cp27mu build, which has Unicode problems.
-  "/opt/python/cp35-cp35m/bin"
   "/opt/python/cp36-cp36m/bin"
   "/opt/python/cp37-cp37m/bin"
   "/opt/python/cp38-cp38/bin"
   "/opt/python/cp39-cp39/bin"
+  "/opt/python/cp310-cp310/bin"
 )
 
 function repair_wheel {
@@ -25,31 +23,34 @@ function repair_wheel {
     fi
 }
 
-cd "$THIS_DIR"
 export CFLAGS="-I${DEPS_DIR}/include"
 export LDFLAGS="-L${DEPS_DIR}/lib"
 
 ls -l "${DEPS_DIR}/lib/"
+# Without copying these to /lib64/, we get this error when trying to import postal:
+# "ImportError: libpostal.so.1: cannot open shared object file: No such file or directory"
 cp "${DEPS_DIR}"/lib/libpostal.so* "/lib64/"
+
+rm -rf "/io/.eggs"
+rm -rf "/io/postal.egg-info"
+rm -rf "/io/build"
+rm -rf "/io/dist"
+
+export LIBPOSTAL_DATA_DIR="/libpostal/datadir/libpostal"
 
 # Compile wheels
 cd /io/
 for PYBIN in ${PYBINS[@]}; do
-    # TODO: Some way to single-source these dev dependencies?
-    "${PYBIN}/pip" -qq install "six" "nose>=1.0"
-
-    "${PYBIN}/python" /io/setup.py install
-    "${PYBIN}/python" /io/setup.py build_ext --inplace
-    "${PYBIN}/nosetests" --no-path-adjustment /io/postal/tests
-
-    "${PYBIN}/pip" -qq wheel /io/ --no-deps --wheel-dir wheelhouse/
+    "${PYBIN}/pip" -qq install --editable .
+    "${PYBIN}/pip" -qq install -r dev-requirements.txt
+    "${PYBIN}/pytest" /io/postal/tests
+    "${PYBIN}/pip" -qq wheel . --no-deps --wheel-dir wheelhouse/
 done
 
 # Bundle external shared libraries into the wheels
 for whl in wheelhouse/*.whl; do
     repair_wheel "$whl"
 done
-
 
 cd /
 # Install packages and test

@@ -70,3 +70,26 @@ nosetests postal/tests
 ```
 
 The ```build_ext --inplace``` business is needed so the C extensions build in the source checkout directory and are accessible/importalbe by the Python modules.
+
+Building Binary Wheels
+----------------------
+
+For Linux, running from any system that supports Docker:
+
+```sh
+pushd libpostal-image/
+docker build -t openvenues/libpostal .
+popd
+
+rm -rf postal.egg-info/ postal/*.so postal/*.pyc
+docker run --rm --volume `pwd`:/io openvenues/libpostal /io/build-wheels.sh
+```
+
+For macOS, running from macOS:
+
+```sh
+# Install libpostal per the instructions above first.
+pip install -r dev-requirements.txt
+tox
+delocate-wheel wheelhouse/*macosx*.whl
+```
