@@ -21,7 +21,7 @@ jobs:
           # - macos-10.15
     env:
       LIBPOSTAL_GIT_TAG: "9c975972985b54491e756efd70e416f18ff97958"
-      LIBPOSTAL_DEPS_DIR: "${{ HOME }}/deps"
+      LIBPOSTAL_DEPS_DIR: "/tmp/libpostal-deps"
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-python@v2
