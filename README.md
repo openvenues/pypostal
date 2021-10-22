@@ -83,6 +83,8 @@ popd
 
 rm -rf postal.egg-info/ postal/*.so postal/*.pyc
 docker run --rm --volume `pwd`:/io openvenues/libpostal /io/build-wheels.sh
+# We only want the manylinux wheels.
+rm wheelhouse/*-linux_*.whl
 ```
 
 For macOS, running from macOS:
