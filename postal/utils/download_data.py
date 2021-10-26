@@ -2,20 +2,32 @@ import logging
 import os
 import os.path
 import shutil
+import sqlite3
 import urllib.request
 from appdirs import user_data_dir
+from contextlib import contextmanager
 from pathlib import Path
 
 DATA_DOWNLOAD_URL = 'https://github.com/openvenues/libpostal/releases/download'
 APP_DIR = Path(user_data_dir(appname='pypostal', appauthor='openvenues'))
+INT32_MAX = 2147483647
 
 logging.basicConfig()
 logger = logging.getLogger('postal.utils.download_data')
 logger.setLevel('DEBUG')
 
 
-def set_data_dir():
-    os.environ['LIBPOSTAL_DATA_DIR'] = str(get_data_dir())
+@contextmanager
+def lock():
+    db = sqlite3.connect(str(APP_DIR / "lock.sqlite"))
+    # https://sqlite.org/c3ref/busy_timeout.html
+    db.execute(f"PRAGMA busy_timeout = {INT32_MAX}")
+    with db:
+        db.execute("CREATE TABLE IF NOT EXISTS lock(a INT PRIMARY KEY)")
+        db.execute("DELETE FROM lock")
+        db.execute("INSERT INTO lock VALUES (1)")
+        # Yield from inside the transaction to hold a lock on the table.
+        yield
 
 
 def get_data_dir():
@@ -24,26 +36,24 @@ def get_data_dir():
     return data_dir
 
 
-def clean_data_dir():
-    data_dir = get_data_dir()
+def clean_data_dir(target_dir=get_data_dir()):
     backup_dir = APP_DIR / 'datadir.backup'
     temp_backup_dir = APP_DIR / 'datadir.backup-temp'
     shutil.rmtree(temp_backup_dir, ignore_errors=True)
-    shutil.move(data_dir, temp_backup_dir)
+    shutil.move(target_dir, temp_backup_dir)
     shutil.rmtree(backup_dir, ignore_errors=True)
     shutil.move(temp_backup_dir, backup_dir)
 
 
-def download_data(target_version='v1.0.0'):
-    data_dir = get_data_dir()
-    data_version_file = data_dir / 'data_version'
+def download_data(target_dir=get_data_dir(), target_version='v1.0.0'):
+    data_version_file = target_dir / 'data_version'
 
     if data_version_file.exists():
         with data_version_file.open(mode='r') as f:
             data_version = f.read().strip()
         if target_version == data_version:
             logger.debug(
-                f"Data already downloaded to '{data_dir}' at desired version "
+                f"Data already downloaded to '{target_dir}' at desired version "
                 f"of '{target_version}'."
             )
             return
@@ -52,7 +62,7 @@ def download_data(target_version='v1.0.0'):
                 f"Existing version '{data_version}' does not match target "
                 f"version '{target_version}'. Cleaning up data dir."
             )
-            clean_data_dir()
+            clean_data_dir(target_dir)
 
     data_files = [
         'language_classifier.tar.gz',
@@ -60,11 +70,11 @@ def download_data(target_version='v1.0.0'):
         'parser.tar.gz',
     ]
 
-    print(f"Data dir is set to: {data_dir}")
+    print(f"Data dir is set to: {target_dir}")
 
     for data_file in data_files:
         download_url = f'{DATA_DOWNLOAD_URL}/{target_version}/{data_file}'
-        target_path = data_dir / data_file
+        target_path = target_dir / data_file
         with urllib.request.urlopen(download_url) as urlf:
             with target_path.open('wb') as localf:
                 print(f"Downloading '{data_file}' from '{download_url}'...")
@@ -72,7 +82,7 @@ def download_data(target_version='v1.0.0'):
         print(f"Unpacking '{data_file}'...")
         shutil.unpack_archive(
             target_path,
-            extract_dir=data_dir,
+            extract_dir=target_dir,
             format='gztar',
         )
 
@@ -87,8 +97,10 @@ def ensure_data_available():
             "Skipping download."
         )
     else:
-        set_data_dir()
-        download_data(target_version='v1.0.0')
+        data_dir = get_data_dir()
+        with lock():
+            download_data(target_dir=data_dir)
+        os.environ['LIBPOSTAL_DATA_DIR'] = str(data_dir)
 
 
 if __name__ == '__main__':
