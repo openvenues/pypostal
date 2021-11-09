@@ -10,13 +10,14 @@ from setuptools.command.install import install
 from distutils.errors import DistutilsArgError
 
 THIS_DIR = os.path.realpath(os.path.dirname(__file__))
-VERSION = '1.2.0.dev0'
+VERSION = '1.2.0.dev1'
 
 
 def main():
     setup(
         name='postal',
         version=VERSION,
+        python_requires=">=3.6.*",
         install_requires=[
             'six',
             'appdirs==1.4.*',
@@ -88,11 +89,7 @@ def main():
             'Intended Audience :: Information Technology',
             'License :: OSI Approved :: MIT License',
             'Programming Language :: C',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-            'Programming Language :: Python :: 3.8',
-            'Programming Language :: Python :: 3.9',
-            'Programming Language :: Python :: 3.10',
+            'Programming Language :: Python :: 3',
             'Operating System :: MacOS :: MacOS X',
             'Operating System :: POSIX :: Linux',
             'Topic :: Text Processing :: Linguistic',
