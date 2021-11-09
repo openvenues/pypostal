@@ -18,8 +18,13 @@ logger.setLevel('DEBUG')
 
 
 @contextmanager
-def lock():
-    db = sqlite3.connect(str(APP_DIR / "lock.sqlite"))
+def lock(lock_dir):
+    """
+    Very inelegent but functional lock mechanism that works on macOS, Linux/Unix,
+    and should also work on Windows.
+    """
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    db = sqlite3.connect(str(lock_dir / 'lock.sqlite'))
     # https://sqlite.org/c3ref/busy_timeout.html
     db.execute(f"PRAGMA busy_timeout = {INT32_MAX}")
     with db:
@@ -36,16 +41,16 @@ def get_data_dir():
     return data_dir
 
 
-def clean_data_dir(target_dir=get_data_dir()):
-    backup_dir = APP_DIR / 'datadir.backup'
-    temp_backup_dir = APP_DIR / 'datadir.backup-temp'
-    shutil.rmtree(temp_backup_dir, ignore_errors=True)
-    shutil.move(target_dir, temp_backup_dir)
-    shutil.rmtree(backup_dir, ignore_errors=True)
-    shutil.move(temp_backup_dir, backup_dir)
+# def clean_data_dir(target_dir=get_data_dir()):
+#     backup_dir = APP_DIR / 'datadir.backup'
+#     temp_backup_dir = APP_DIR / 'datadir.backup-temp'
+#     shutil.rmtree(temp_backup_dir, ignore_errors=True)
+#     shutil.move(target_dir, temp_backup_dir)
+#     shutil.rmtree(backup_dir, ignore_errors=True)
+#     shutil.move(temp_backup_dir, backup_dir)
 
 
-def download_data(target_dir=get_data_dir(), target_version='v1.0.0'):
+def download_data(target_dir, target_version):
     data_version_file = target_dir / 'data_version'
 
     if data_version_file.exists():
@@ -58,11 +63,12 @@ def download_data(target_dir=get_data_dir(), target_version='v1.0.0'):
             )
             return
         else:
-            logger.debug(
-                f"Existing version '{data_version}' does not match target "
-                f"version '{target_version}'. Cleaning up data dir."
+            raise RuntimeError(
+                f"Existing libpostal data version '{data_version}' does not match target "
+                f"version '{target_version}'. Please empty '{target_dir}' and try again."
             )
-            clean_data_dir(target_dir)
+            # Let's not touch any existing data ourselves.
+            # clean_data_dir(target_dir)
 
     data_files = [
         'language_classifier.tar.gz',
@@ -90,17 +96,26 @@ def download_data(target_dir=get_data_dir(), target_version='v1.0.0'):
         f.write(target_version)
 
 
-def ensure_data_available():
+def ensure_data_available(data_version='v1.0.0'):
     if 'LIBPOSTAL_DATA_DIR' in os.environ:
+        data_dir = Path(os.environ['LIBPOSTAL_DATA_DIR'])
         logger.debug(
-            f"LIBPOSTAL_DATA_DIR is set to '{os.environ['LIBPOSTAL_DATA_DIR']}'. "
-            "Skipping download."
+            f"LIBPOSTAL_DATA_DIR is set to '{data_dir}'. "
+            "Using that as the libpostal data directory."
         )
     else:
         data_dir = get_data_dir()
-        with lock():
-            download_data(target_dir=data_dir)
+        logger.debug(
+            f"LIBPOSTAL_DATA_DIR is not set. Setting it to '{data_dir}'. "
+            "Using that as the libpostal data directory."
+        )
         os.environ['LIBPOSTAL_DATA_DIR'] = str(data_dir)
+
+    with lock(lock_dir=(data_dir / "lock")):
+        download_data(
+            target_dir=data_dir,
+            target_version=data_version,
+        )
 
 
 if __name__ == '__main__':
