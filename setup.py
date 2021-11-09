@@ -1,13 +1,6 @@
-import argparse
 import os
-import subprocess
-import sys
 
-from setuptools import setup, Extension, Command, find_packages
-from setuptools.command.build_py import build_py
-from setuptools.command.build_ext import build_ext
-from setuptools.command.install import install
-from distutils.errors import DistutilsArgError
+from setuptools import setup, Extension, find_packages
 
 THIS_DIR = os.path.realpath(os.path.dirname(__file__))
 VERSION = '1.2.0.dev1'
