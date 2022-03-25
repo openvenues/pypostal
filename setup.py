@@ -12,7 +12,7 @@ from distutils.errors import DistutilsArgError
 this_dir = os.path.realpath(os.path.dirname(__file__))
 
 
-VERSION = '1.1.9'
+VERSION = '1.1.10'
 
 
 def main():
