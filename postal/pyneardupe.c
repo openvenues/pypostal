@@ -19,6 +19,146 @@ struct module_state {
     static struct module_state _state;
 #endif
 
+static PyObject *py_name_hashes(PyObject *self, PyObject *args, PyObject *keywords) {
+    PyObject *arg_input;
+    PyObject *arg_languages = Py_None;
+
+    libpostal_normalize_options_t options = libpostal_get_default_options();
+    options.address_components = LIBPOSTAL_ADDRESS_NAME | LIBPOSTAL_ADDRESS_STREET;
+
+    PyObject *result = NULL;
+
+    static char *kwlist[] = {"name",
+                             "languages",
+                             "address_components",
+                             "latin_ascii",
+                             "transliterate",
+                             "strip_accents",
+                             "decompose",
+                             "lowercase",
+                             "trim_string",
+                             "replace_word_hyphens",
+                             "delete_word_hyphens",
+                             "replace_numeric_hyphens",
+                             "delete_numeric_hyphens",
+                             "split_alpha_from_numeric",
+                             "delete_final_periods",
+                             "delete_acronym_periods",
+                             "drop_english_possessives",
+                             "delete_apostrophes",
+                             "expand_numex",
+                             "roman_numerals",
+                             NULL
+                            };
+
+    uint32_t address_components = options.address_components;
+    uint32_t latin_ascii = options.latin_ascii;
+    uint32_t transliterate = options.transliterate;
+    uint32_t strip_accents = options.strip_accents;
+    uint32_t decompose = options.decompose;
+    uint32_t lowercase = options.lowercase;
+    uint32_t trim_string = options.trim_string;
+    uint32_t replace_word_hyphens = options.replace_word_hyphens;
+    uint32_t delete_word_hyphens = options.delete_word_hyphens;
+    uint32_t replace_numeric_hyphens = options.replace_numeric_hyphens;
+    uint32_t delete_numeric_hyphens = options.delete_numeric_hyphens;
+    uint32_t split_alpha_from_numeric = options.split_alpha_from_numeric;
+    uint32_t delete_final_periods = options.delete_final_periods;
+    uint32_t delete_acronym_periods = options.delete_acronym_periods;
+    uint32_t drop_english_possessives = options.drop_english_possessives;
+    uint32_t delete_apostrophes = options.delete_apostrophes;
+    uint32_t expand_numex = options.expand_numex;
+    uint32_t roman_numerals = options.roman_numerals;
+
+    if (!PyArg_ParseTupleAndKeywords(args, keywords,
+                                     "O|OHIIIIIIIIIIIIIIIII:name_hashes", kwlist,
+                                     &arg_input, &arg_languages,
+                                     &address_components,
+                                     &latin_ascii,
+                                     &transliterate,
+                                     &strip_accents,
+                                     &decompose,
+                                     &lowercase,
+                                     &trim_string,
+                                     &replace_word_hyphens,
+                                     &delete_word_hyphens,
+                                     &replace_numeric_hyphens,
+                                     &delete_numeric_hyphens,
+                                     &split_alpha_from_numeric,
+                                     &delete_final_periods,
+                                     &delete_acronym_periods,
+                                     &drop_english_possessives,
+                                     &delete_apostrophes,
+                                     &expand_numex,
+                                     &roman_numerals
+                                     )) {
+        return 0;
+    }
+
+
+    options.address_components = address_components;
+    options.latin_ascii = latin_ascii;
+    options.transliterate = transliterate;
+    options.strip_accents = strip_accents;
+    options.decompose = decompose;
+    options.lowercase = lowercase;
+    options.trim_string = trim_string;
+    options.replace_word_hyphens = replace_word_hyphens;
+    options.delete_word_hyphens = delete_word_hyphens;
+    options.replace_numeric_hyphens = replace_numeric_hyphens;
+    options.delete_numeric_hyphens = delete_numeric_hyphens;
+    options.split_alpha_from_numeric = split_alpha_from_numeric;
+    options.delete_final_periods = delete_final_periods;
+    options.delete_acronym_periods = delete_acronym_periods;
+    options.drop_english_possessives = drop_english_possessives;
+    options.delete_apostrophes = delete_apostrophes;
+    options.expand_numex = expand_numex;
+    options.roman_numerals = roman_numerals;
+
+    char *input = PyObject_to_string(arg_input);
+
+    if (input == NULL) {
+        return 0;
+    }
+
+    size_t num_languages = 0;
+    char **languages = NULL;
+
+    if (PySequence_Check(arg_languages)) {
+        languages = PyObject_to_strings_max_len(arg_languages, LIBPOSTAL_MAX_LANGUAGE_LEN, &num_languages);
+    }
+
+    if (num_languages > 0 && languages != NULL) {
+        options.num_languages = num_languages;
+        options.languages = languages;
+    }
+
+    size_t num_hashes = 0;
+    char **hashes = NULL;
+
+    hashes = libpostal_near_dupe_name_hashes(input, options, &num_hashes);
+
+    free(input);
+
+    if (hashes != NULL) {
+        result = PyObject_from_strings(hashes, num_hashes);
+        string_array_destroy(hashes, num_hashes);
+    } else {
+        result = Py_None;
+        Py_INCREF(Py_None);
+    }
+
+    if (languages != NULL) {
+        for (size_t i = 0; i < num_languages; i++) {
+            free(languages[i]);
+        }
+        free(languages);
+    }
+
+    return result;
+}
+
+
 static PyObject *py_near_dupe_hashes(PyObject *self, PyObject *args, PyObject *keywords) {
     PyObject *arg_labels;
     PyObject *arg_values;
@@ -157,6 +297,7 @@ exit_free_languages:
 }
 
 static PyMethodDef near_dupe_methods[] = {
+    {"name_hashes", (PyCFunction)py_name_hashes, METH_VARARGS | METH_KEYWORDS, "name_hashes(name, **kw)"},
     {"near_dupe_hashes", (PyCFunction)py_near_dupe_hashes, METH_VARARGS | METH_KEYWORDS, "near_dupe_hashes(labels, values, **kw)"},
     {NULL, NULL},
 };
@@ -227,7 +368,7 @@ init_near_dupe(void) {
 
    char* datadir = getenv("LIBPOSTAL_DATA_DIR");
 
-    if ((datadir!=NULL) && (!libpostal_setup_datadir(datadir) || !libpostal_setup_language_classifier_datadir(datadir)) ||
+    if (((datadir!=NULL) && (!libpostal_setup_datadir(datadir) || !libpostal_setup_language_classifier_datadir(datadir))) ||
         (!libpostal_setup() || !libpostal_setup_language_classifier())) {
             PyErr_SetString(PyExc_TypeError,
                             "Error loading libpostal");

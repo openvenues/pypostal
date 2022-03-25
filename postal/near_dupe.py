@@ -3,6 +3,10 @@
 from postal import _near_dupe
 
 
+def name_hashes(name, languages=None, **kw):
+    return _near_dupe.name_hashes(name, languages=languages, **kw)
+
+
 def near_dupe_hashes(labels, values, languages=None, **kw):
     """
     Hash the given address into normalized strings that can be used to group similar
