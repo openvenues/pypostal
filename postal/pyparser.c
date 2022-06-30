@@ -59,7 +59,7 @@ static PyObject *py_parse_address(PyObject *self, PyObject *args, PyObject *keyw
     char *country = NULL;
 
     if (arg_country != Py_None) {
-        country = PyObject_to_string(arg_language);
+        country = PyObject_to_string(arg_country);
         if (country == NULL) {
             goto exit_free_language;
         }
