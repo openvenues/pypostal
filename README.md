@@ -71,4 +71,4 @@ python setup.py build_ext --inplace
 nosetests postal/tests
 ```
 
-The ```build_ext --inplace``` business is needed so the C extensions build in the source checkout directory and are accessible/importalbe by the Python modules.
+The ```build_ext --inplace``` business is needed so the C extensions build in the source checkout directory and are accessible/importable by the Python modules.
