@@ -143,6 +143,8 @@ static PyObject *py_expand(PyObject *self, PyObject *args, PyObject *keywords) {
         expansions = libpostal_expand_address_root(input, options, &num_expansions);
     }
 
+    free(input);
+
     if (languages != NULL) {
         for (int i = 0; i < num_languages; i++) {
             free(languages[i]);
