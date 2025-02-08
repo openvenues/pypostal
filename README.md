@@ -14,6 +14,9 @@ expand_address('Quatre vingt douze Ave des Champs-Élysées')
 
 from postal.parser import parse_address
 parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater London, EC2A 4RH, United Kingdom')
+
+from postal.lang_classifier import classify_lang_address
+classify_lang_address('Quatre vingt douze Ave des Champs-Élysées')
 ```
 
 Installation
@@ -43,7 +46,7 @@ git clone https://github.com/openvenues/libpostal
 cd libpostal
 ./bootstrap.sh
 ./configure --datadir=[...some dir with a few GB of space...]
-make
+make -j4
 sudo make install
 
 # On Linux it's probably a good idea to run
