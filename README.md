@@ -23,7 +23,7 @@ Before using the Python bindings, you must install the libpostal C library. Make
 
 **On Ubuntu/Debian**
 ```
-sudo apt-get install curl autoconf automake libtool python-dev pkg-config
+sudo apt-get install curl autoconf automake libtool python-dev pkg-config build-essential
 ```
 **On CentOS/RHEL**
 ```
@@ -54,6 +54,16 @@ To install the Python library, just run:
 
 ```
 pip install postal
+```
+
+**Senzing Data Model**
+
+There is an improved, regularly updated [parsing model](https://github.com/openvenues/libpostal?tab=readme-ov-file#installation-with-an-alternative-data-model) from Senzing. "Accuracy improvements averaged more than 4% for all countries, but improvements in specific countries were as high as 87%." 27 nations have 10% or greater improvements in accuracy.
+
+To build Libpostal with the new model, alter the `configure` command above:
+
+```bash
+./configure --datadir=[...some dir with a few GB of space...] MODEL=senzing
 ```
 
 Compatibility
