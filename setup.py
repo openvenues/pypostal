@@ -84,11 +84,13 @@ class build_ext(_build_ext):
                 f'--prefix={libpostal_install_prefix}'
             ]
 
-            # Add --disable-sse2 flag ONLY for macOS ARM64 TARGET
-            if platform.system() == 'Darwin' and 'arm64' in norm_arch:
-                print("Detected macOS ARM64 TARGET, adding --disable-sse2 flag", flush=True)
-                configure_cmd.append('--disable-sse2')
-            elif platform.system() == 'Darwin':
+            # Add --disable-sse2 flag ONLY for ARM64 targets (macOS or Linux)
+            if 'arm64' in norm_arch:
+                # Check if already added for macOS to avoid duplicates, though harmless
+                if '--disable-sse2' not in configure_cmd:
+                     print(f"Detected ARM64 TARGET ({platform.system()}), adding --disable-sse2 flag", flush=True)
+                     configure_cmd.append('--disable-sse2')
+            elif platform.system() == 'Darwin': # Explicitly log for non-arm macOS
                  print(f"Detected macOS non-ARM64 TARGET ({norm_arch}), NOT adding --disable-sse2 flag", flush=True)
             
             # Add other platform-specific flags if needed later
