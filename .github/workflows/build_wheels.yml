@@ -65,27 +65,27 @@ jobs:
           # Windows: Dependencies installed via msys2/setup-msys2 action above. 
           # We might need to ensure the MSYS2 paths are available to the build.
           # Setuptools might pick up MSVC by default; we might need to force MinGW if issues arise.
-          # Example: CIBW_ENVIRONMENT_WINDOWS: PATH=\"{msys2_path}\\\mingw64\\\bin;{msys2_path}\\\usr\\\bin;{env_path}\""
+          # Example: CIBW_ENVIRONMENT_WINDOWS: PATH="{msys2_path}\\mingw64\\bin;{msys2_path}\\usr\\bin;{env_path}"
           # This often requires careful handling of paths and ensuring the correct compiler is used.
           # For now, rely on setup-msys2 action adding tools to PATH.
-          CIBW_BEFORE_BUILD_WINDOWS: \"\" # Dependencies installed in previous step
+          CIBW_BEFORE_BUILD_WINDOWS: "" # Dependencies installed in previous step
 
           # Set environment variable to potentially help find pkg-config files if needed
           # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
 
-          # Specify architectures (example for Linux, macOS)
-          CIBW_ARCHS_LINUX: \"auto aarch64\"
-          CIBW_ARCHS_MACOS: \"x86_64 arm64\"
-          CIBW_ARCHS_WINDOWS: \"auto\" # Usually AMD64
+          # Specify architectures (example for Linux, macOS) - Corrected escaping
+          CIBW_ARCHS_LINUX: "auto aarch64"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_ARCHS_WINDOWS: "auto" # Usually AMD64
 
-          # Skip PyPy for now as C extensions can be tricky
-          CIBW_SKIP: \"pp*\"
+          # Skip PyPy for now as C extensions can be tricky - Corrected escaping
+          CIBW_SKIP: "pp*"
           
-          # Increase build verbosity
-          CIBW_BUILD_VERBOSITY: \"1\"
+          # Increase build verbosity - Corrected escaping
+          CIBW_BUILD_VERBOSITY: "1"
 
-          # Test command: Basic import after install
-          CIBW_TEST_COMMAND: \"python -c \\\"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\\\"\"
+          # Test command: Basic import after install - Corrected escaping
+          CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
           # NOTE: Full functionality test requires data download (Phase 3)
           
           # --- Add potential fixes for common issues ---
