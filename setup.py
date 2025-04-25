@@ -93,6 +93,12 @@ class build_ext(_build_ext):
             
             # Add other platform-specific flags if needed later
 
+            # --- Set CFLAGS for PIC --- #
+            original_cflags = os.environ.get('CFLAGS', '')
+            pic_cflags = original_cflags + ' -fPIC'
+            print(f"Temporarily setting CFLAGS to: {pic_cflags}", flush=True)
+            os.environ['CFLAGS'] = pic_cflags
+
             try:
                 # Run configure from within vendor dir for simplicity
                 subprocess.check_call(configure_cmd, cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
@@ -108,7 +114,15 @@ class build_ext(_build_ext):
                     except Exception as log_e:
                         print(f"(Could not read config.log: {log_e})", file=sys.stderr)
                     print("--- End config.log ---:")
+                # --- Restore CFLAGS --- #
+                print(f"Restoring CFLAGS to: {original_cflags}", flush=True)
+                os.environ['CFLAGS'] = original_cflags
                 sys.exit(1)
+            # except Exception as e: # Catch other potential errors
+            #     # --- Restore CFLAGS --- #
+            #     print(f"Restoring CFLAGS due to other error: {original_cflags}", flush=True)
+            #     os.environ['CFLAGS'] = original_cflags
+            #     raise e
 
             # Build and install libpostal
             print("Building and installing libpostal...", flush=True)
@@ -124,7 +138,20 @@ class build_ext(_build_ext):
                 subprocess.check_call(['make', 'install'], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
             except subprocess.CalledProcessError as e:
                 print(f"Error running make/make install: {e}", file=sys.stderr)
+                # --- Restore CFLAGS --- #
+                print(f"Restoring CFLAGS after make error: {original_cflags}", flush=True)
+                os.environ['CFLAGS'] = original_cflags
                 sys.exit(1)
+            # except Exception as e:
+            #     # --- Restore CFLAGS --- #
+            #     print(f"Restoring CFLAGS after other make error: {original_cflags}", flush=True)
+            #     os.environ['CFLAGS'] = original_cflags
+            #     raise e
+            finally:
+                 # --- Restore CFLAGS --- #
+                 # Ensure CFLAGS is restored even if make succeeds
+                 print(f"Restoring CFLAGS after libpostal build: {original_cflags}", flush=True)
+                 os.environ['CFLAGS'] = original_cflags
 
             # Check if static library was created
             if not os.path.exists(libpostal_static_lib):

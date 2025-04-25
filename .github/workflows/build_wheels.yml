@@ -70,14 +70,14 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           # CIBW_MANYLINUX_I686_IMAGE: manylinux_2_28 # Uncomment if building i686
-          # CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28 # Uncomment if building ppc64le
+          CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28 # Uncomment if building ppc64le
           # CIBW_MANYLINUX_S390X_IMAGE: manylinux_2_28 # Uncomment if building s390x
 
           # Set environment variable to potentially help find pkg-config files if needed
           # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
 
-          # Specify architectures (example for Linux, macOS) - Corrected escaping
-          CIBW_ARCHS_LINUX: "auto aarch64"
+          # Specify architectures (example for Linux, macOS) - Explicitly list Linux archs
+          CIBW_ARCHS_LINUX: "x86_64 aarch64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ARCHS_WINDOWS: "auto" # Usually AMD64
 
