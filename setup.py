@@ -22,12 +22,16 @@ vendor_dir = os.path.join(this_dir, 'vendor', 'libpostal')
 class build_ext(_build_ext):
     def run(self):
         # Define paths
-        libpostal_install_prefix = os.path.join(self.build_temp, 'libpostal_install')
+        # Ensure the install prefix is an absolute path for configure script
+        build_temp_abs = os.path.abspath(self.build_temp)
+        libpostal_install_prefix = os.path.join(build_temp_abs, 'libpostal_install')
         libpostal_lib_dir = os.path.join(libpostal_install_prefix, 'lib')
         libpostal_include_dir = os.path.join(libpostal_install_prefix, 'include')
         libpostal_static_lib = os.path.join(libpostal_lib_dir, 'libpostal.a')
 
         # Ensure install directories exist
+        # Use build_temp_abs for creating the top-level temp dir if needed
+        # os.makedirs(build_temp_abs, exist_ok=True) # Usually created by setuptools
         os.makedirs(libpostal_install_prefix, exist_ok=True)
         os.makedirs(libpostal_lib_dir, exist_ok=True)
         os.makedirs(libpostal_include_dir, exist_ok=True)
@@ -135,6 +139,13 @@ class build_ext(_build_ext):
                  ext.include_dirs.append(libpostal_src_dir)
 
             print(f"Final paths for {ext.name}: include={ext.include_dirs}, lib={ext.library_dirs}", flush=True)
+
+        # --- Set environment variables to help find the library --- #
+        # On macOS, LIBRARY_PATH can help the linker find libraries
+        print(f"Setting LIBRARY_PATH to: {libpostal_lib_dir}", flush=True)
+        os.environ['LIBRARY_PATH'] = libpostal_lib_dir
+        # On Linux/others, LD_LIBRARY_PATH is used at runtime, but LIBRARY_PATH might sometimes be used at link time too.
+        # os.environ['LD_LIBRARY_PATH'] = libpostal_lib_dir # Might be needed later if runtime loading fails
 
         # Now, run the original build_ext command
         print("Running original build_ext command...", flush=True)
