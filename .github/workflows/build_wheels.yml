@@ -21,7 +21,7 @@ jobs:
         # Use a minimal set for testing, expand later
         # os: [ubuntu-20.04, windows-2019, macos-12]
         # Refined OS list based on cibuildwheel recommendations and likely support
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest] # , windows-latest, macos-latest]
 
     steps:
       - name: Checkout repository
@@ -56,20 +56,22 @@ jobs:
         uses: pypa/cibuildwheel@v2.17.0 # Use a recent version
         env:
           # Configure CIBW_BEFORE_BUILD_* for platform-specific dependency installation
-          # Linux (manylinux): Use yum (runs inside manylinux container)
-          CIBW_BEFORE_BUILD_LINUX: "yum install -y autoconf automake libtool pkgconfig curl"
-          # Note: build-essential (gcc etc) is usually already present in manylinux
+          # Linux (manylinux): Use dnf (runs inside manylinux_2_28 container)
+          CIBW_BEFORE_BUILD_LINUX: "dnf install -y autoconf automake libtool pkgconfig curl perl-IPC-Cmd"
+          # Note: Added perl-IPC-Cmd as it might be needed by newer autotools/libtool
           
           # macOS: Use brew
           CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
           
           # Windows: Dependencies installed via msys2/setup-msys2 action above. 
-          # We might need to ensure the MSYS2 paths are available to the build.
-          # Setuptools might pick up MSVC by default; we might need to force MinGW if issues arise.
-          # Example: CIBW_ENVIRONMENT_WINDOWS: PATH="{msys2_path}\\mingw64\\bin;{msys2_path}\\usr\\bin;{env_path}"
-          # This often requires careful handling of paths and ensuring the correct compiler is used.
-          # For now, rely on setup-msys2 action adding tools to PATH.
           CIBW_BEFORE_BUILD_WINDOWS: "" # Dependencies installed in previous step
+
+          # --- Use manylinux_2_28 images --- #
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
+          # CIBW_MANYLINUX_I686_IMAGE: manylinux_2_28 # Uncomment if building i686
+          # CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28 # Uncomment if building ppc64le
+          # CIBW_MANYLINUX_S390X_IMAGE: manylinux_2_28 # Uncomment if building s390x
 
           # Set environment variable to potentially help find pkg-config files if needed
           # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
