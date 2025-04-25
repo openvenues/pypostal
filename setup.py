@@ -2,108 +2,173 @@ import argparse
 import os
 import subprocess
 import sys
+import platform
+import shutil
+import multiprocessing
 
 from setuptools import setup, Extension, Command, find_packages
 from setuptools.command.build_py import build_py
-from setuptools.command.build_ext import build_ext
+from setuptools.command.build_ext import build_ext as _build_ext
 from setuptools.command.install import install
 from distutils.errors import DistutilsArgError
 
 this_dir = os.path.realpath(os.path.dirname(__file__))
+vendor_dir = os.path.join(this_dir, 'vendor', 'libpostal')
 
+# VERSION = '1.1.10' # Read from pyproject.toml ideally, but setup.py runs first
+# For now, let setuptools handle version via pyproject.toml
 
-VERSION = '1.1.10'
+# Custom build_ext command
+class build_ext(_build_ext):
+    def run(self):
+        # Define paths
+        libpostal_install_prefix = os.path.join(self.build_temp, 'libpostal_install')
+        libpostal_lib_dir = os.path.join(libpostal_install_prefix, 'lib')
+        libpostal_include_dir = os.path.join(libpostal_install_prefix, 'include')
+        libpostal_static_lib = os.path.join(libpostal_lib_dir, 'libpostal.a')
+
+        # Ensure install directories exist
+        os.makedirs(libpostal_install_prefix, exist_ok=True)
+        os.makedirs(libpostal_lib_dir, exist_ok=True)
+        os.makedirs(libpostal_include_dir, exist_ok=True)
+
+        # Check if libpostal source exists and run bootstrap.sh if needed
+        configure_path = os.path.join(vendor_dir, 'configure')
+        if not os.path.exists(configure_path):
+            print("libpostal source not found or configure script missing, running bootstrap.sh", flush=True)
+            try:
+                subprocess.check_call(['./bootstrap.sh'], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+            except subprocess.CalledProcessError as e:
+                print(f"Error running bootstrap.sh: {e}", file=sys.stderr)
+                sys.exit(1)
+            except OSError as e:
+                print(f"Error running bootstrap.sh (maybe autotools not installed?): {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # Configure libpostal
+        print(f"Configuring libpostal with prefix {libpostal_install_prefix}", flush=True)
+        configure_cmd = [
+            os.path.join(vendor_dir, 'configure'), # Use absolute path
+            '--disable-shared', 
+            '--enable-static', 
+            f'--prefix={libpostal_install_prefix}'
+        ]
+
+        # Add --disable-sse2 flag for macOS ARM64
+        if platform.system() == 'Darwin' and platform.machine() == 'arm64':
+            print("Detected macOS ARM64, adding --disable-sse2 flag", flush=True)
+            configure_cmd.append('--disable-sse2')
+        
+        # Add other platform-specific flags if needed later
+
+        try:
+            # Run configure from within vendor dir for simplicity
+            subprocess.check_call(configure_cmd, cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running ./configure: {e}", file=sys.stderr)
+            # Optional: Capture and print config.log if it exists
+            config_log = os.path.join(vendor_dir, 'config.log')
+            if os.path.exists(config_log):
+                print("--- config.log ---:")
+                with open(config_log, 'r') as f:
+                    print(f.read())
+                print("--- End config.log ---:")
+            sys.exit(1)
+
+        # Build and install libpostal
+        print("Building and installing libpostal...", flush=True)
+        try:
+            # Clean first (optional)
+            subprocess.check_call(['make', 'clean'], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+            
+            # Build with multiple cores
+            num_cores = multiprocessing.cpu_count()
+            subprocess.check_call(['make', '-j', str(num_cores)], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+            
+            # Install to prefix
+            subprocess.check_call(['make', 'install'], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+        except subprocess.CalledProcessError as e:
+            print(f"Error running make/make install: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        # Check if static library was created
+        if not os.path.exists(libpostal_static_lib):
+            print(f"Error: Static library {libpostal_static_lib} not found after build!", file=sys.stderr)
+            sys.exit(1)
+
+        # Update Extension paths *before* calling the original build_ext
+        print(f"Updating extension paths: include={libpostal_include_dir}, lib={libpostal_lib_dir}", flush=True)
+        for ext in self.extensions:
+            # Add install path to include and library dirs
+            ext.include_dirs.insert(0, libpostal_include_dir)
+            ext.library_dirs.insert(0, libpostal_lib_dir)
+            
+            # Remove old absolute paths if they exist (optional, but cleaner)
+            ext.include_dirs = [d for d in ext.include_dirs if d not in ('/usr/local/include',)]
+            ext.library_dirs = [d for d in ext.library_dirs if d not in ('/usr/local/lib',)]
+
+            # Ensure the src dir isn't duplicated if it was added before
+            libpostal_src_dir = os.path.join(vendor_dir, 'src')
+            if libpostal_src_dir not in ext.include_dirs:
+                 ext.include_dirs.append(libpostal_src_dir)
+
+            print(f"Final paths for {ext.name}: include={ext.include_dirs}, lib={ext.library_dirs}", flush=True)
+
+        # Now, run the original build_ext command
+        print("Running original build_ext command...", flush=True)
+        _build_ext.run(self)
 
 
 def main():
-    setup(
-        name='postal',
-        version=VERSION,
-        install_requires=[
-            'six',
-        ],
-        setup_requires=[
-            'nose>=1.0'
-        ],
-        ext_modules=[
+    # Most metadata moved to pyproject.toml
+    # Define extensions here, paths will be updated by custom build_ext
+    extensions = [
             Extension('postal._expand',
                       sources=['postal/pyexpand.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._parser',
                       sources=['postal/pyparser.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._token_types',
                       sources=['postal/pytokentypes.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._tokenize',
                       sources=['postal/pytokenize.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._normalize',
                       sources=['postal/pynormalize.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._near_dupe',
                       sources=['postal/pyneardupe.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._dedupe',
                       sources=['postal/pydedupe.c', 'postal/pyutils.c'],
                       libraries=['postal'],
-                      include_dirs=['/usr/local/include'],
-                      library_dirs=['/usr/local/lib'],
                       extra_compile_args=['-std=c99'],
                       ),
-        ],
+        ]
+
+    setup(
+        # Minimal setup() call relies on pyproject.toml for most metadata
+        ext_modules=extensions,
         packages=find_packages(),
         package_data={
-            'postal': ['*.h']
+            'postal': ['*.h'] # Keep C headers needed by extensions
         },
-        zip_safe=False,
-        url='https://github.com/openvenues/pypostal',
-        download_url='https://github.com/openvenues/pypostal/tarball/{}'.format(VERSION),
-        description='Python bindings to libpostal for fast international address parsing/normalization',
-        license='MIT License',
-        maintainer='mapzen.com',
-        maintainer_email='pelias@mapzen.com',
-        classifiers=[
-            'Intended Audience :: Developers',
-            'Intended Audience :: Information Technology',
-            'License :: OSI Approved :: MIT License',
-            'Programming Language :: C',
-            'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.7',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
-            'Operating System :: MacOS :: MacOS X',
-            'Operating System :: POSIX :: Linux',
-            'Topic :: Text Processing :: Linguistic',
-            'Topic :: Scientific/Engineering :: GIS',
-            'Topic :: Internet :: WWW/HTTP :: Indexing/Search',
-            'Topic :: Software Development :: Libraries :: Python Modules'
-        ],
+        zip_safe=False, # C extensions generally mean zip_safe=False
+        cmdclass={'build_ext': build_ext}, # Use the custom build_ext
     )
 
 

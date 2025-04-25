@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=42", "wheel", "nose>=1.0"] # Added nose from setup_requires
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "postal"
+version = "1.1.10" # Placeholder, will update in Phase 5
+description = "Python bindings to libpostal for fast international address parsing/normalization"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT License"}
+maintainers = [
+  { name = "mapzen.com", email = "pelias@mapzen.com" }, # Keep original for now, update later if desired
+]
+classifiers = [
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: C",
+    # "Programming Language :: Python :: 2", # Removing Python 2 support
+    # "Programming Language :: Python :: 2.7", # Removing Python 2 support
+    "Programming Language :: Python :: 3",
+    # "Programming Language :: Python :: 3.4", # Removing older Python 3
+    # "Programming Language :: Python :: 3.5", # Removing older Python 3
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows", # Add Windows classifier
+    "Topic :: Text Processing :: Linguistic",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "six",
+    # Downloader dependencies (requests, platformdirs, tqdm) will be added in Phase 3
+]
+
+[project.urls]
+Homepage = "https://github.com/openvenues/pypostal"
+Download = "https://github.com/openvenues/pypostal/tarball/1.1.10" # Corresponds to version
+Repository = "https://github.com/openvenues/pypostal"
+
+# Optional dependencies, package data etc. might be moved here later if needed.
+# For now, setup.py still handles Extension modules and package_data. 

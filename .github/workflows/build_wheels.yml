@@ -1,0 +1,82 @@
+name: Build Wheels
+
+on:
+  push:
+    branches:
+      - "slop/pre_build_library" # Or your main branch
+    tags:
+      - 'v*' # Trigger on version tags
+  pull_request:
+    branches:
+      - "slop/pre_build_library" # Or your main branch
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Use a minimal set for testing, expand later
+        # os: [ubuntu-20.04, windows-2019, macos-12]
+        # Refined OS list based on cibuildwheel recommendations and likely support
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true # Fetch the libpostal submodule
+
+      - name: Set up QEMU (for Linux ARM builds)
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all # Or specify 'arm64'
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.17.0 # Use a recent version
+        env:
+          # Configure CIBW_BEFORE_BUILD to install libpostal dependencies
+          CIBW_BEFORE_BUILD: >
+            yum update -y && yum install -y autoconf automake libtool pkgconfig curl || 
+            apt-get update && apt-get install -y autoconf automake libtool pkg-config curl build-essential || 
+            brew install autoconf automake libtool pkg-config curl
+          # Note: Windows build might require more setup if MSVC can't handle autotools directly
+          # It might need MSYS2 setup within CIBW_BEFORE_BUILD to run configure/make
+          # E.g., choco install msys2; C:/msys64/usr/bin/bash -lc 'pacman -Syu --noconfirm && pacman -S --needed --noconfirm autoconf automake libtool pkg-config make gcc'
+          
+          # Set environment variable to potentially help find pkg-config files if needed
+          # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example
+
+          # Specify architectures (example for Linux, macOS)
+          CIBW_ARCHS_LINUX: "auto aarch64"
+          CIBW_ARCHS_MACOS: "x86_64 arm64"
+          CIBW_ARCHS_WINDOWS: "auto" # Usually AMD64
+
+          # Skip PyPy for now as C extensions can be tricky
+          CIBW_SKIP: "pp*"
+          
+          # Increase build verbosity
+          CIBW_BUILD_VERBOSITY: "1"
+
+          # Test command: Basic import after install
+          CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
+          # NOTE: Full functionality test requires data download (Phase 3)
+          
+          # --- Add potential fixes for common issues ---
+          # Fix dynamic library loading issues on macOS? Might need DELOCATE_ আবLIB = 1
+          # CIBW_ENVIRONMENT_MACOS: DELOCATE_ আবLIB=1
+          
+        with:
+          # Output directory for wheels
+          output-dir: wheelhouse
+          # Specify packages to build if pyproject.toml is not in root
+          # package-dir: pypostal # Uncomment if setup.py is in pypostal/
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: ./wheelhouse/*.whl 
