@@ -35,20 +35,43 @@ jobs:
         with:
           platforms: all # Or specify 'arm64'
 
+      # Windows Specific Setup: Install MSYS2 and required tools
+      - name: Set up MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64 # Or other environments like MSYS if needed
+          update: true
+          install: >- # Using multiline string for clarity
+            mingw-w64-x86_64-toolchain
+            autoconf
+            automake-wrapper
+            libtool
+            pkg-config
+            curl
+            make 
+          # Note: automake-wrapper is often needed on MSYS2
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0 # Use a recent version
         env:
-          # Configure CIBW_BEFORE_BUILD to install libpostal dependencies
-          CIBW_BEFORE_BUILD: >
-            yum update -y && yum install -y autoconf automake libtool pkgconfig curl || 
-            apt-get update && apt-get install -y autoconf automake libtool pkg-config curl build-essential || 
-            brew install autoconf automake libtool pkg-config curl
-          # Note: Windows build might require more setup if MSVC can't handle autotools directly
-          # It might need MSYS2 setup within CIBW_BEFORE_BUILD to run configure/make
-          # E.g., choco install msys2; C:/msys64/usr/bin/bash -lc 'pacman -Syu --noconfirm && pacman -S --needed --noconfirm autoconf automake libtool pkg-config make gcc'
+          # Configure CIBW_BEFORE_BUILD_* for platform-specific dependency installation
+          # Linux (Ubuntu): Use apt-get
+          CIBW_BEFORE_BUILD_LINUX: "apt-get update && apt-get install -y autoconf automake libtool pkg-config curl build-essential"
           
+          # macOS: Use brew
+          CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
+          
+          # Windows: Dependencies installed via msys2/setup-msys2 action above. 
+          # We might need to ensure the MSYS2 paths are available to the build.
+          # Setuptools might pick up MSVC by default; we might need to force MinGW if issues arise.
+          # Example: CIBW_ENVIRONMENT_WINDOWS: PATH="{msys2_path}\\mingw64\\bin;{msys2_path}\\usr\\bin;{env_path}"
+          # This often requires careful handling of paths and ensuring the correct compiler is used.
+          # For now, rely on setup-msys2 action adding tools to PATH.
+          CIBW_BEFORE_BUILD_WINDOWS: "" # Dependencies installed in previous step
+
           # Set environment variable to potentially help find pkg-config files if needed
-          # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example
+          # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
 
           # Specify architectures (example for Linux, macOS)
           CIBW_ARCHS_LINUX: "auto aarch64"
