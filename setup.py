@@ -37,13 +37,29 @@ class build_ext(_build_ext):
         if not os.path.exists(configure_path):
             print("libpostal source not found or configure script missing, running bootstrap.sh", flush=True)
             try:
-                subprocess.check_call(['./bootstrap.sh'], cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
+                # Explicitly use 'sh' for Windows compatibility with MSYS2
+                cmd = ['./bootstrap.sh']
+                if platform.system() == 'Windows':
+                    cmd.insert(0, 'sh')
+                subprocess.check_call(cmd, cwd=vendor_dir, stdout=sys.stdout, stderr=sys.stderr)
             except subprocess.CalledProcessError as e:
                 print(f"Error running bootstrap.sh: {e}", file=sys.stderr)
                 sys.exit(1)
             except OSError as e:
-                print(f"Error running bootstrap.sh (maybe autotools not installed?): {e}", file=sys.stderr)
+                # Add check for FileNotFoundError which is more specific on Python 3
+                if isinstance(e, FileNotFoundError):
+                    print(f"Error running bootstrap.sh: Command '{cmd[0]}' not found. Is MSYS2/sh installed and in PATH?", file=sys.stderr)
+                else:
+                    print(f"Error running bootstrap.sh (OS error): {e}", file=sys.stderr)
                 sys.exit(1)
+
+        # --- Determine Target Architecture from cibuildwheel --- 
+        # CIBW_ARCHS contains the target architecture (e.g., 'x86_64', 'arm64')
+        # Note: It might list multiple if universal2, but configure runs per arch.
+        # We rely on the environment set for the specific build invocation.
+        target_arch = os.environ.get('CIBW_ARCHS', platform.machine())
+        # If CIBW_ARCHS is not set (e.g., local build), fall back to platform.machine()
+        print(f"Target architecture detected/set: {target_arch}", flush=True)
 
         # Configure libpostal
         print(f"Configuring libpostal with prefix {libpostal_install_prefix}", flush=True)
@@ -54,10 +70,13 @@ class build_ext(_build_ext):
             f'--prefix={libpostal_install_prefix}'
         ]
 
-        # Add --disable-sse2 flag for macOS ARM64
-        if platform.system() == 'Darwin' and platform.machine() == 'arm64':
-            print("Detected macOS ARM64, adding --disable-sse2 flag", flush=True)
+        # Add --disable-sse2 flag ONLY for macOS ARM64 TARGET
+        # Check platform.system() for OS and target_arch for the specific build arch
+        if platform.system() == 'Darwin' and 'arm64' in target_arch:
+            print("Detected macOS ARM64 TARGET, adding --disable-sse2 flag", flush=True)
             configure_cmd.append('--disable-sse2')
+        elif platform.system() == 'Darwin':
+            print(f"Detected macOS non-ARM64 TARGET ({target_arch}), NOT adding --disable-sse2 flag", flush=True)
         
         # Add other platform-specific flags if needed later
 
@@ -70,8 +89,11 @@ class build_ext(_build_ext):
             config_log = os.path.join(vendor_dir, 'config.log')
             if os.path.exists(config_log):
                 print("--- config.log ---:")
-                with open(config_log, 'r') as f:
-                    print(f.read())
+                try:
+                    with open(config_log, 'r') as f:
+                        print(f.read())
+                except Exception as log_e:
+                    print(f"(Could not read config.log: {log_e})", file=sys.stderr)
                 print("--- End config.log ---:")
             sys.exit(1)
 
