@@ -35,6 +35,30 @@ jobs:
         with:
           platforms: all # Or specify 'arm64'
 
+      # --- Add steps for caching the compiled libpostal --- #
+      - name: Get libpostal submodule commit hash
+        id: get_submodule_hash
+        # Run in shell that supports pipelines and awk
+        shell: bash 
+        # Need to cd into pypostal if workflow CWD is workspace root
+        run: |
+          cd pypostal
+          # Extract the commit hash (remove leading +/-, take first field)
+          HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Cache compiled libpostal library
+        uses: actions/cache@v4
+        with:
+          # Cache the directory containing arch-specific builds
+          path: pypostal/build/libpostal_install_cache
+          # Key includes OS and the submodule hash
+          key: ${{ runner.os }}-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          # Restore key prefix in case of exact miss (less critical here)
+          restore-keys: |
+            ${{ runner.os }}-libpostal-cache-
+      # -------------------------------------------------- #
+      
       # Windows Specific Setup: Install MSYS2 and required tools
       - name: Set up MSYS2 (Windows)
         if: runner.os == 'Windows'
@@ -45,7 +69,7 @@ jobs:
           install: >- # Using multiline string for clarity
             mingw-w64-x86_64-toolchain
             autoconf
-            automake-wrapper
+            automake
             libtool
             pkg-config
             curl
@@ -79,10 +103,10 @@ jobs:
           # Specify architectures (example for Linux, macOS) - Explicitly list Linux archs
           CIBW_ARCHS_LINUX: "x86_64 aarch64"
           CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_ARCHS_WINDOWS: "auto" # Usually AMD64
+          CIBW_ARCHS_WINDOWS: "AMD64" # Explicitly build only 64-bit Windows
 
-          # Skip PyPy for now as C extensions can be tricky - Corrected escaping
-          CIBW_SKIP: "pp*"
+          # Skip PyPy and musllinux builds for now
+          CIBW_SKIP: "pp* *-musllinux_*"
           
           # Increase build verbosity - Corrected escaping
           CIBW_BUILD_VERBOSITY: "1"

@@ -174,9 +174,9 @@
     *   Explore native NEON intrinsics for ARM performance if `sse2neon.h` translation is insufficient.
     *   Profile other potential bottlenecks (string handling, memory allocation).
 *   **Model Management:**
-    *   Support for alternative models (e.g., `MODEL=senzing`).
-    *   Configuration options for cache directory location.
-    *   Allowing users to provide pre-downloaded/extracted model data directories.
+*   Support for alternative models (e.g., `MODEL=senzing`).
+*   Configuration options for cache directory location.
+*   Allowing users to provide pre-downloaded/extracted model data directories.
 *   **Build Process:**
-    *   Investigate static linking vs shared library bundling trade-offs more deeply.
+*   Investigate static linking vs shared library bundling trade-offs more deeply.
     *   Refine error handling and reporting in custom build steps.

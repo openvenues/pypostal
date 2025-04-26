@@ -30,7 +30,7 @@ class build_ext(_build_ext):
             norm_arch = 'arm64' # Use a consistent name
         elif 'x86_64' in target_arch or 'AMD64' in target_arch:
              norm_arch = 'x86_64'
-        elif 'x86' in target_arch or 'i686' in target_arch:
+        elif 'x86' in target_arch or 'i686' in target_arch or 'win32' in target_arch:
              norm_arch = 'x86'
         else:
              norm_arch = target_arch # Use as-is if unknown
