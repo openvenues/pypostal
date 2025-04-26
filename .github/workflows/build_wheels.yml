@@ -2,26 +2,36 @@ name: Build Wheels
 
 on:
   push:
-    branches:
-      - "slop/pre_build_library" # Or your main branch
+    branches: [ "main", "master"] # Adjust branches as needed
     tags:
-      - 'v*' # Trigger on version tags
+      - 'v*'
   pull_request:
-    branches:
-      - "slop/pre_build_library" # Or your main branch
+    # The branches below must be a subset of the branches above
+    branches: [ "main", "master" ]
   workflow_dispatch: # Allow manual trigger
-
+  schedule:
+    - cron: "0 12 1 * *" # Run monthly on the 1st at 12:00 UTC
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} (${{ matrix.arch || 'native' }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # Use a minimal set for testing, expand later
-        # os: [ubuntu-20.04, windows-2019, macos-12]
-        # Refined OS list based on cibuildwheel recommendations and likely support
-        os: [ubuntu-latest , macos-latest] # windows-latest
+        # Define specific combinations for Linux, keep macOS simple
+        include:
+          - os: ubuntu-latest # Standard x86_64 runner
+            arch: x86_64
+            cibw_archs: "x86_64"
+          - os: ubuntu-22.04-arm # Native ARM64 runner
+            arch: aarch64
+            cibw_archs: "aarch64"
+          - os: macos-latest # Builds both x86_64 and arm64 via cibuildwheel default
+            arch: universal
+            cibw_archs: "auto" # Let cibuildwheel handle macOS archs
+          # - os: windows-latest # Add back if/when needed
+          #   arch: AMD64
+          #   cibw_archs: "AMD64"
 
     steps:
       - name: Checkout repository
@@ -29,11 +39,7 @@ jobs:
         with:
           submodules: true # Fetch the libpostal submodule
 
-      - name: Set up QEMU (for Linux ARM builds)
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all # Or specify 'arm64'
+      # --- QEMU step is removed --- #
 
       # --- Add steps for caching the compiled libpostal --- #
       - name: Get libpostal submodule commit hash
@@ -53,14 +59,20 @@ jobs:
           # Cache the directory containing arch-specific builds
           # Path is relative to the repository root where setup.py runs
           path: build/libpostal_install_cache
-          # Key includes OS and the submodule hash
-          key: ${{ runner.os }}-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
-          # Restore key prefix in case of exact miss (less critical here)
+          # Key includes OS, architecture, and the submodule hash
+          key: ${{ matrix.os }}-${{ matrix.arch }}-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          # Restore key prefix in case of exact miss
           restore-keys: |
-            ${{ runner.os }}-libpostal-cache-
+            ${{ matrix.os }}-${{ matrix.arch }}-libpostal-cache-
       # -------------------------------------------------- #
       
+      # Ensure the base directory for the cache exists before cibuildwheel runs
+      - name: Ensure cache directory exists
+        shell: bash # Use bash for consistency across runners
+        run: mkdir -p build/libpostal_install_cache
+
       # Windows Specific Setup: Install MSYS2 and required tools
+      # Note: This step will only run if/when windows-latest is added back to the matrix
       - name: Set up MSYS2 (Windows)
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
@@ -82,38 +94,32 @@ jobs:
         env:
           # Configure CIBW_BEFORE_BUILD_* for platform-specific dependency installation
           # Linux (manylinux): Use dnf (runs inside manylinux_2_28 container)
+          # Note: Needs to run on both x86_64 and native arm64 runners now
           CIBW_BEFORE_BUILD_LINUX: "dnf install -y autoconf automake libtool pkgconfig curl perl-IPC-Cmd"
-          # Note: Added perl-IPC-Cmd as it might be needed by newer autotools/libtool
           
           # macOS: Use brew
           CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
           
           # Windows: Dependencies installed via msys2/setup-msys2 action above. 
-          CIBW_BEFORE_BUILD_WINDOWS: "" # Dependencies installed in previous step
+          CIBW_BEFORE_BUILD_WINDOWS: "" # Dependencies installed in previous step if Windows is enabled
 
           # --- Use manylinux_2_28 images --- #
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           # CIBW_MANYLINUX_I686_IMAGE: manylinux_2_28 # Uncomment if building i686
-          CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28 # Uncomment if building ppc64le
+          # CIBW_MANYLINUX_PPC64LE_IMAGE: manylinux_2_28 # Uncomment if building ppc64le
           # CIBW_MANYLINUX_S390X_IMAGE: manylinux_2_28 # Uncomment if building s390x
 
-          # --- Set PATH for Windows builds to find MSYS2 tools --- #
-          # Note: Use {env} templating to prepend to existing PATH
-          # Note: Use ; as path separator on Windows
+          # --- Set PATH for Windows builds (only relevant if Windows matrix entry exists) --- #
           CIBW_ENVIRONMENT_WINDOWS: >
-            PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
-          # Let's rely on msys2/setup-msys2 adding tools to PATH first
+            PATH="C:\Windows\System32;C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
 
-          # Set environment variable to potentially help find pkg-config files if needed
-          # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
+          # --- Specify Architectures based on matrix --- #
+          # On Linux/Windows, we use the specific arch from the matrix.
+          # On macOS, 'auto' lets cibuildwheel build both x86_64 and arm64.
+          CIBW_ARCHS: ${{ matrix.cibw_archs }}
 
-          # Specify architectures (example for Linux, macOS) - Explicitly list Linux archs
-          CIBW_ARCHS_LINUX: "x86_64 aarch64"
-          CIBW_ARCHS_MACOS: "x86_64 arm64"
-          CIBW_ARCHS_WINDOWS: "AMD64" # Explicitly build only 64-bit Windows
-
-          # Skip PyPy, musllinux, and Python 3.7 on Windows
+          # Skip PyPy, musllinux, and Python 3.7 on Windows (only relevant if Windows matrix entry exists)
           CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
           
           # Increase build verbosity - Corrected escaping
@@ -123,18 +129,15 @@ jobs:
           CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
           # NOTE: Full functionality test requires data download (Phase 3)
           
-          # --- Add potential fixes for common issues ---
-          # Fix dynamic library loading issues on macOS? Might need DELOCATE_ আবLIB = 1
-          # CIBW_ENVIRONMENT_MACOS: DELOCATE_ আবLIB=1
-          
         with:
           # Output directory for wheels
           output-dir: wheelhouse
           # Specify packages to build if pyproject.toml is not in root
-          # package-dir: pypostal # Uncomment if setup.py is in pypostal/
+          # package-dir: . # Assumes setup.py is in the root of pypostal
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}
+          # Include OS and Arch in artifact name for clarity
+          name: wheels-${{ matrix.os }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl 
