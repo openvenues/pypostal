@@ -51,7 +51,8 @@ jobs:
         uses: actions/cache@v4
         with:
           # Cache the directory containing arch-specific builds
-          path: pypostal/build/libpostal_install_cache
+          # Path is relative to the repository root where setup.py runs
+          path: build/libpostal_install_cache
           # Key includes OS and the submodule hash
           key: ${{ runner.os }}-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
           # Restore key prefix in case of exact miss (less critical here)
