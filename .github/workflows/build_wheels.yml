@@ -100,8 +100,9 @@ jobs:
           # --- Set PATH for Windows builds to find MSYS2 tools --- #
           # Note: Use {env} templating to prepend to existing PATH
           # Note: Use ; as path separator on Windows
-          CIBW_ENVIRONMENT_WINDOWS: >
-            PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
+          # CIBW_ENVIRONMENT_WINDOWS: >
+          #   PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
+          # Let's rely on msys2/setup-msys2 adding tools to PATH first
 
           # Set environment variable to potentially help find pkg-config files if needed
           # PKG_CONFIG_PATH: /usr/local/lib/pkgconfig:/usr/lib/pkgconfig # Example Linux/macOS
@@ -111,8 +112,8 @@ jobs:
           CIBW_ARCHS_MACOS: "x86_64 arm64"
           CIBW_ARCHS_WINDOWS: "AMD64" # Explicitly build only 64-bit Windows
 
-          # Skip PyPy and musllinux builds for now
-          CIBW_SKIP: "pp* *-musllinux_*"
+          # Skip PyPy, musllinux, and Python 3.7 on Windows
+          CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
           
           # Increase build verbosity - Corrected escaping
           CIBW_BUILD_VERBOSITY: "1"
