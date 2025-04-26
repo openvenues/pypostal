@@ -2,9 +2,13 @@ name: Build and Lint
 
 on:
   push:
-    branches: [ "main", "slop/pre_build_library" ] # Adjust branches as needed
+    branches: [ "main", "master" ] # Adjust branches as needed
   pull_request:
-    branches: [ "main", "slop/pre_build_library" ] # Adjust branches as needed
+    branches: [ "main", "master" ] # Adjust branches as needed
+
+# Add top-level permissions for least privilege
+permissions:
+  contents: read
 
 jobs:
   build:
