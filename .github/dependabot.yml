@@ -1,0 +1,24 @@
+# pypostal/.github/dependabot.yml
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/" # Check workflow files relative to the pypostal repo root
+    schedule:
+      interval: "weekly" # Check for updates once a week
+    commit-message:
+      # Prefix commit messages with "chore(deps):" for clarity
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # --- Placeholder for Python dependencies (pip) ---
+  # Uncomment and configure this section once you add Python dependencies
+  # in pyproject.toml (e.g., for the downloader module in Phase 3)
+  #
+  # - package-ecosystem: "pip"
+  #   directory: "/" # Location of your pypostal/pyproject.toml
+  #   schedule:
+  #     interval: "weekly"
+  #   commit-message:
+  #     prefix: "chore(deps)"
+  #     include: "scope" 
