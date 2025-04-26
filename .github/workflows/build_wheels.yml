@@ -100,8 +100,8 @@ jobs:
           # --- Set PATH for Windows builds to find MSYS2 tools --- #
           # Note: Use {env} templating to prepend to existing PATH
           # Note: Use ; as path separator on Windows
-          # CIBW_ENVIRONMENT_WINDOWS: >
-          #   PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
+          CIBW_ENVIRONMENT_WINDOWS: >
+            PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;{env_path}"
           # Let's rely on msys2/setup-msys2 adding tools to PATH first
 
           # Set environment variable to potentially help find pkg-config files if needed

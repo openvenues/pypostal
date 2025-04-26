@@ -54,6 +54,29 @@ class build_ext(_build_ext):
             # os.makedirs(libpostal_lib_dir, exist_ok=True) # Created by make install
             # os.makedirs(libpostal_include_dir, exist_ok=True) # Created by make install
 
+            # --- Copy Windows-specific files (if on Windows) --- #
+            if platform.system() == 'Windows':
+                print("Copying files from vendor/libpostal/windows/ to vendor/libpostal/", flush=True)
+                windows_dir = os.path.join(vendor_dir, 'windows')
+                if os.path.isdir(windows_dir):
+                    # Use shutil.copytree for robustness if Python version allows `dirs_exist_ok`
+                    # For simplicity/compatibility, copy file by file
+                    for item_name in os.listdir(windows_dir):
+                        src_item = os.path.join(windows_dir, item_name)
+                        dst_item = os.path.join(vendor_dir, item_name)
+                        try:
+                            if os.path.isfile(src_item):
+                                shutil.copy2(src_item, dst_item)
+                            elif os.path.isdir(src_item):
+                                # Avoid copying subdirs for now unless needed
+                                # shutil.copytree(src_item, dst_item, dirs_exist_ok=True) 
+                                pass 
+                        except Exception as e:
+                            print(f"Warning: Could not copy {src_item} to {dst_item}: {e}", file=sys.stderr)
+                else:
+                    print("Warning: vendor/libpostal/windows/ directory not found.", file=sys.stderr)
+            # --------------------------------------------------- #
+
             # Check if libpostal source exists and run bootstrap.sh if needed
             configure_path = os.path.join(vendor_dir, 'configure')
             if not os.path.exists(configure_path):
