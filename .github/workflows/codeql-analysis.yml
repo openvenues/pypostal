@@ -1,0 +1,83 @@
+# pypostal/.github/workflows/codeql-analysis.yml
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: [ "main", "slop/pre_build_library" ] # Adjust branches as needed
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main", "slop/pre_build_library" ]
+  schedule:
+    - cron: '30 1 * * 0' # Run weekly on Sunday at 01:30 UTC
+
+permissions:
+  security-events: write # Required for CodeQL to write results
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    # Runner size is larger by default. If needing different size, add 'runs-on: [ubuntu-latest, size: large]' (or self-hosted).
+    # If using Windows self-hosted runners, add 'runs-on: [windows-latest, self-hosted]'
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }} # Use ubuntu as default, macOS for swift (though not used here)
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    permissions:
+      actions: read # for github/codeql-action/init to get workflow details
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/analyze to upload results
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python', 'cpp' ]
+        # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
+        # Use only 'python' and 'cpp' for this project
+
+    steps:
+    - name: Checkout repository
+      # Checks out the pypostal repository where this workflow resides
+      uses: actions/checkout@v4
+      with:
+        submodules: true # Important: Fetch the vendor/libpostal submodule
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: ${{ matrix.language }}
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # queries: security-extended,security-and-quality
+
+    # Install dependencies for C/C++ build (only needed for the 'cpp' matrix entry)
+    - name: Install C/C++ Build Dependencies (Linux)
+      if: matrix.language == 'cpp' && runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y autoconf automake libtool pkg-config curl
+
+    # Autobuild attempts to build any compiled languages (C/C++).
+    # It requires the necessary build tools and dependencies to be available.
+    - name: Autobuild
+      # Autobuild is primarily for compiled languages. Skip for Python.
+      if: matrix.language == 'cpp'
+      uses: github/codeql-action/autobuild@v3
+      # NOTE: Autobuild might struggle with complex build systems like libpostal's.
+      # If this step fails, manual build steps might be needed here, similar to build_wheels.yml:
+      # - name: Set up Python (for setup.py)
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.11' # Choose a representative version
+      # - name: Build libpostal (example manual step)
+      #   run: |
+      #     cd vendor/libpostal # Path relative to pypostal checkout root
+      #     ./bootstrap.sh
+      #     ./configure --prefix=/tmp/libpostal_install
+      #     make -j$(nproc)
+      #     make install
+      #     cd ../../ # Back to pypostal root
+      #     # Potentially run python setup.py build_ext here if needed for analysis
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:${{matrix.language}}" 
