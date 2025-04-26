@@ -40,9 +40,9 @@ jobs:
         id: get_submodule_hash
         # Run in shell that supports pipelines and awk
         shell: bash 
-        # Need to cd into pypostal if workflow CWD is workspace root
         run: |
-          cd pypostal
+          # Need to cd into pypostal if workflow CWD is workspace root
+          # cd pypostal # Remove this line, CWD should be repo root
           # Extract the commit hash (remove leading +/-, take first field)
           HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
           echo "hash=$HASH" >> $GITHUB_OUTPUT
