@@ -1,3 +1,9 @@
+# See prebuild_dependencies_roadmap.md for the new multi-workflow, multi-arch build strategy.
+# This workflow is now only for linting and sdist build checks. All wheel builds are handled in:
+#   - build_wheels_linux.yml
+#   - build_wheels_macos.yml
+#   - build_wheels_windows.yml (future)
+
 name: Build and Lint
 
 on:
@@ -51,4 +57,4 @@ jobs:
     #   uses: actions/upload-artifact@v4
     #   with:
     #     name: sdist-${{ matrix.python-version }}
-    #     path: dist/*.tar.gz 
+    #     path: dist/*.tar.gz

@@ -44,7 +44,7 @@
 
 ## Phase 2: Bundling `libpostal` into Wheels
 
-*Objective: Modify the build process to compile `libpostal` and link it into the `pypostal` C extension, then use `cibuildwheel` to generate multi-platform wheels.* **(COMPLETED)**
+*Objective: Modify the build process to compile `libpostal` and link it into the `pypostal` C extension, then use `cibuildwheel` to generate multi-platform wheels.* **(COMPLETED, but see below for major improvements)**
 
 *   [x] **2.1: Customize Build Script (`setup.py`):**
     *   [x] Action: Define a custom build step (e.g., subclass `setuptools.command.build_ext.build_ext`).
@@ -53,10 +53,10 @@
         *   [x] Change directory to `vendor/libpostal`.
         *   [x] Run `./bootstrap.sh` (required for `autotools`).
         *   [x] Run `./configure`:
-            *   [x] Use flags to enable static linking if feasible (`--disable-shared --enable-static`). Check `libpostal` configure options.
-            *   [x] Set an appropriate install prefix (`--prefix`) pointing to a build cache dir.
+            *   [x] Use flags to enable static linking if feasible (`--disable-shared --enable-static`).
+            *   [x] Set an appropriate install prefix (`--prefix`) pointing to a build cache dir **unique to OS, architecture, and libpostal commit**.
             *   [x] Conditionally add `--disable-sse2` only if building for `arm64` targets (macOS or Linux).
-        *   [x] Run `make clean` (good practice before build).
+        *   [x] Run `make clean` and `git clean -xfd` before each build to ensure a pristine build directory.
         *   [x] Run `make -jN` (use available cores).
         *   [x] Run `make install` (to install into the prefix).
         *   [x] Handle potential build errors.
@@ -67,10 +67,11 @@
         *   [x] Add `postal` to `libraries`.
         *   [x] Set `LIBRARY_PATH` env var before compiling extensions.
     *   *Outcome:* Running `python setup.py build_ext` (or `python -m build`) successfully compiles `libpostal` from the vendored source and links the `pypostal` extension against it, using caching for efficiency.
+
 *   [x] **2.2: Integrate `cibuildwheel` into CI:**
     *   [x] Action: Update/Create the GitHub Actions workflow (`.github/workflows/build_wheels.yml`).
     *   [x] Action: Use the `cibuildwheel` action or run it directly.
-    *   [x] Action: Configure the target platforms (`CIBW_PLATFORM` or matrix): Linux (`manylinux_*`), macOS (x86_64, arm64), Windows (amd64).
+    *   [x] Action: Configure the target platforms (`CIBW_PLATFORM` or matrix): Linux (`manylinux_*`), macOS (x86_64, arm64, universal2), Windows (amd64).
     *   [x] Action: Use platform-specific `CIBW_BEFORE_BUILD_*` to install `libpostal`'s build dependencies:
         *   [x] Linux (`manylinux_2_28`): Use `dnf` to install `autoconf automake libtool pkgconfig curl perl-IPC-Cmd`.
         *   [x] macOS: Use `brew` to install `autoconf automake libtool pkg-config curl`.
@@ -82,6 +83,20 @@
         *   [x] Run a basic Python import test: `python -c "import postal; print('pypostal imported successfully')"`. *Note: Full initialization will fail until Phase 3.*
     *   [x] Action: Configure the workflow to upload the generated wheels (`dist/*.whl`) as build artifacts.
     *   *Outcome:* CI successfully builds binary wheels for all target platforms and architectures. (*Pending confirmation from run #9/10*).
+
+*   **[NEW: 2.3: Major Multi-Arch Build/Cache Refactor]**
+    *   [ ] Action: Split CI into three jobs: `build_wheels_linux`, `build_wheels_macos`, `build_wheels_windows`.
+    *   [ ] Action: For **macOS**, run all three builds (arm64, x86_64, universal2) sequentially in a single job/runner:
+        *   [ ] Before each build, run `make clean` and `git clean -xfd` in `vendor/libpostal`.
+        *   [ ] Use a unique install/cache prefix for each build: `build/libpostal_install_cache/macos-arm64-<commit>/`, etc.
+        *   [ ] For universal2, build both archs, then use `lipo` to combine static libs into a universal2 cache dir.
+        *   [ ] Copy headers from one of the builds to the universal2 cache dir.
+        *   [ ] Restore and save a separate cache for each build type.
+        *   [ ] Upload all three wheel types as artifacts.
+    *   [ ] Action: For **Linux** and **Windows**, continue to use one build per job/arch, each with its own cache keyed by OS/arch/commit.
+    *   [ ] Action: Ensure all cache keys and install prefixes are unique per OS/arch/commit to avoid cross-contamination.
+    *   [ ] Action: Document this structure and rationale in the roadmap and CI comments.
+    *   *Outcome:* Robust, efficient, and maintainable multi-arch builds with no cross-arch/OS cache contamination, and all wheels built and tested in isolation.
 
 ---
 

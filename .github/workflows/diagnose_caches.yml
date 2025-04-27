@@ -1,0 +1,150 @@
+name: Diagnose Cache Contents
+
+on:
+  workflow_dispatch:  # Allow manual triggering
+  
+jobs:
+  diagnose-macos-caches:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Get libpostal submodule commit hash
+        id: get_submodule_hash
+        run: |
+          HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+      
+      # Restore all three Mac caches
+      - name: Restore arm64 cache
+        uses: actions/cache@v4
+        id: cache-arm64
+        with:
+          path: build/libpostal_install_cache/macos-arm64-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          key: macos-arm64-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          restore-keys: |
+            macos-arm64-libpostal-cache-
+      
+      - name: Examine arm64 cache
+        if: steps.cache-arm64.outputs.cache-hit == 'true'
+        run: |
+          echo "===== ARM64 CACHE CONTENTS ====="
+          du -sh build/libpostal_install_cache/macos-arm64-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          find build/libpostal_install_cache/macos-arm64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.a" -exec ls -lh {} \;
+          find build/libpostal_install_cache/macos-arm64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.h" | wc -l
+          find build/libpostal_install_cache/macos-arm64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type d | sort
+          echo "================================="
+      
+      - name: Restore x86_64 cache
+        uses: actions/cache@v4
+        id: cache-x86_64
+        with:
+          path: build/libpostal_install_cache/macos-x86_64-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          key: macos-x86_64-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          restore-keys: |
+            macos-x86_64-libpostal-cache-
+      
+      - name: Examine x86_64 cache
+        if: steps.cache-x86_64.outputs.cache-hit == 'true'
+        run: |
+          echo "===== X86_64 CACHE CONTENTS ====="
+          du -sh build/libpostal_install_cache/macos-x86_64-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          find build/libpostal_install_cache/macos-x86_64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.a" -exec ls -lh {} \;
+          find build/libpostal_install_cache/macos-x86_64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.h" | wc -l
+          find build/libpostal_install_cache/macos-x86_64-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type d | sort
+          echo "=================================="
+      
+      - name: Restore universal2 cache
+        uses: actions/cache@v4
+        id: cache-universal2
+        with:
+          path: build/libpostal_install_cache/macos-universal2-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          key: macos-universal2-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          restore-keys: |
+            macos-universal2-libpostal-cache-
+      
+      - name: Examine universal2 cache
+        if: steps.cache-universal2.outputs.cache-hit == 'true'
+        run: |
+          echo "===== UNIVERSAL2 CACHE CONTENTS ====="
+          du -sh build/libpostal_install_cache/macos-universal2-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          find build/libpostal_install_cache/macos-universal2-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.a" -exec ls -lh {} \;
+          find build/libpostal_install_cache/macos-universal2-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f -name "*.h" | wc -l
+          find build/libpostal_install_cache/macos-universal2-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type d | sort
+          echo "======================================"
+      
+      - name: Check architecture of libpostal.a
+        if: steps.cache-universal2.outputs.cache-hit == 'true' || steps.cache-x86_64.outputs.cache-hit == 'true' || steps.cache-arm64.outputs.cache-hit == 'true'
+        run: |
+          echo "===== CHECKING ARCHITECTURES ====="
+          for LIB in $(find build/libpostal_install_cache -name "libpostal.a"); do
+            echo "Architecture of $LIB:"
+            lipo -info $LIB
+          done
+          echo "================================"
+
+  diagnose-linux-caches:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, aarch64]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Get libpostal submodule commit hash
+        id: get_submodule_hash
+        run: |
+          HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+      
+      - name: Create cache directory
+        run: |
+          mkdir -p build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+      
+      - name: Restore Linux cache
+        uses: actions/cache@v4
+        id: cache-linux
+        with:
+          path: build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          key: linux-${{ matrix.arch }}-libpostal-cache-${{ steps.get_submodule_hash.outputs.hash }}
+          restore-keys: |
+            linux-${{ matrix.arch }}-libpostal-cache-
+      
+      - name: Examine Linux cache
+        if: steps.cache-linux.outputs.cache-hit == 'true'
+        run: |
+          echo "===== LINUX ${{ matrix.arch }} CACHE CONTENTS ====="
+          du -sh build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }}
+          find build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f | wc -l
+          find build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f | xargs -I{} ls -lh {} || echo "No files found"
+          find build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type d | sort
+          echo "==========================================="
+      
+      # Create test file in a SEPARATE diagnostic directory to avoid interfering with real caches
+      - name: Create test file in diagnostic directory if cache is empty
+        if: steps.cache-linux.outputs.cache-hit == 'true'
+        run: |
+          FILE_COUNT=$(find build/libpostal_install_cache/linux-${{ matrix.arch }}-libpostal-${{ steps.get_submodule_hash.outputs.hash }} -type f | wc -l)
+          mkdir -p build/diagnostic_cache/${{ matrix.arch }}
+          if [ "$FILE_COUNT" -eq "0" ]; then
+            echo "Cache appears empty, creating diagnostic file..."
+            echo "This is a test file created to verify cache writing works" > build/diagnostic_cache/${{ matrix.arch }}/test_file.txt
+          else
+            echo "Cache has $FILE_COUNT files. Creating summary file in diagnostic directory."
+            echo "Found $FILE_COUNT files in the cache" > build/diagnostic_cache/${{ matrix.arch }}/summary.txt
+          fi
+      
+      # Save diagnostic data with a completely different prefix to avoid any chance of conflict
+      - name: Save diagnostic info
+        uses: actions/cache@v4
+        with:
+          path: build/diagnostic_cache/${{ matrix.arch }}
+          key: diagnostic-only-linux-${{ matrix.arch }}-${{ steps.get_submodule_hash.outputs.hash }}
+          restore-keys: |
+            diagnostic-only-linux-${{ matrix.arch }}-
