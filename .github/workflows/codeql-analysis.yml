@@ -3,10 +3,10 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ "main", "slop/pre_build_library" ] # Adjust branches as needed
+    branches: [ "main", "master", "slop/pre_build_library" ] # Added "master" branch explicitly
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "main", "slop/pre_build_library" ]
+    branches: [ "main", "master", "slop/pre_build_library" ]
   schedule:
     - cron: '30 1 * * 0' # Run weekly on Sunday at 01:30 UTC
 
@@ -38,12 +38,14 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: true # Important: Fetch the vendor/libpostal submodule
+        fetch-depth: 0 # Fetch all history for all branches and tags
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
+        queries: security-and-quality # Use a standard query suite
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file.
         # queries: security-extended,security-and-quality
@@ -55,29 +57,53 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y autoconf automake libtool pkg-config curl
 
-    # Autobuild attempts to build any compiled languages (C/C++).
-    # It requires the necessary build tools and dependencies to be available.
-    - name: Autobuild
-      # Autobuild is primarily for compiled languages. Skip for Python.
+    # Set up Python for setup.py (needed for both Python and C/C++ analysis)
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12' # Use a recent version
+
+    # Install Python dependencies
+    - name: Install Python Dependencies
+      if: matrix.language == 'python'
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install setuptools wheel
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    # MANUAL BUILD STEPS for C/C++ instead of Autobuild
+    - name: Manual C/C++ Build Steps
       if: matrix.language == 'cpp'
+      run: |
+        # Build libpostal from vendor directory
+        cd vendor/libpostal
+        ./bootstrap.sh
+        
+        # Configure with appropriate flags
+        ./configure --disable-data-download --prefix=/tmp/libpostal_install
+        
+        # Build libpostal
+        make -j$(nproc)
+        make install
+        
+        # Return to pypostal root
+        cd ../../
+        
+        # Install pip dependencies
+        python -m pip install --upgrade pip
+        python -m pip install setuptools wheel
+        
+        # Build the Python extension which will compile the C files
+        # This ensures all C code gets analyzed
+        python setup.py build_ext --inplace
+
+    # Autobuild for Python only
+    - name: Autobuild for Python
+      if: matrix.language == 'python'
       uses: github/codeql-action/autobuild@v3
-      # NOTE: Autobuild might struggle with complex build systems like libpostal's.
-      # If this step fails, manual build steps might be needed here, similar to build_wheels.yml:
-      # - name: Set up Python (for setup.py)
-      #   uses: actions/setup-python@v5
-      #   with:
-      #     python-version: '3.11' # Choose a representative version
-      # - name: Build libpostal (example manual step)
-      #   run: |
-      #     cd vendor/libpostal # Path relative to pypostal checkout root
-      #     ./bootstrap.sh
-      #     ./configure --prefix=/tmp/libpostal_install
-      #     make -j$(nproc)
-      #     make install
-      #     cd ../../ # Back to pypostal root
-      #     # Potentially run python setup.py build_ext here if needed for analysis
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
-        category: "/language:${{matrix.language}}" 
+        category: "/language:${{matrix.language}}"
+        upload: true # Ensure results are uploaded
