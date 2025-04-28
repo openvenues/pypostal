@@ -3,12 +3,9 @@ name: "CodeQL Analysis"
 
 on:
   push:
-    branches: [ "main", "master", "slop/pre_build_library" ] # Added "master" branch explicitly
-  pull_request:
-    # The branches below must be a subset of the branches above
-    branches: [ "main", "master", "slop/pre_build_library" ]
+    branches: [ "main", "master" ] # Only run on main branches
   schedule:
-    - cron: '30 1 * * 0' # Run weekly on Sunday at 01:30 UTC
+    - cron: '0 12 * * 1' # Run weekly on Monday at 12:00 UTC
 
 permissions:
   security-events: write # Required for CodeQL to write results

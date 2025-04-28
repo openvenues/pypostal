@@ -37,21 +37,26 @@ jobs:
       - name: Upgrade pip and install cibuildwheel
         run: python -m pip install --upgrade pip cibuildwheel
 
-      # Ensure the base cache directory exists
-      - name: Create cache directory structure
-        run: mkdir -p build/libpostal_install_cache
-
-      # --- Restore a single shared cache for all architectures ---
+      # Use a single shared cache that includes all architecture directories
       - name: Cache libpostal libraries
         uses: actions/cache@v4
         id: cache-macos
         with:
+          # Cache only the specific architecture subdirectories
           path: build/libpostal_install_cache
-          key: macos-all-libpostal-cache-v2-${{ steps.get_submodule_hash.outputs.hash }}
+          # Single cache key for all architectures
+          key: macos-libpostal-all-v4-${{ steps.get_submodule_hash.outputs.hash }}
           restore-keys: |
-            macos-all-libpostal-cache-v2-
+            macos-libpostal-all-v4-
 
-      # --- arm64 ---
+      # Show the cache directory before building
+      - name: Debug cache directory before build
+        run: |
+          mkdir -p build/libpostal_install_cache
+          echo "Cache directory contents before build:"
+          find build/libpostal_install_cache -type d -maxdepth 1 | sort
+
+      # --- arm64 build ---
       - name: Build arm64 wheels
         run: |
           export CIBW_ARCHS=arm64
@@ -62,9 +67,17 @@ jobs:
           CIBW_ARCHS: arm64
           CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
           CIBW_BUILD_VERBOSITY: "1"
-          CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
+          CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
 
-      # --- x86_64 ---
+      # Show cache after arm64 build
+      - name: Debug cache directory after arm64 build
+        run: |
+          echo "Cache directory contents after arm64 build:"
+          find build/libpostal_install_cache -type d -maxdepth 2 | sort
+          echo "Checking arm64 libpostal.a:"
+          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
+
+      # --- x86_64 build ---
       - name: Build x86_64 wheels
         run: |
           export CIBW_ARCHS=x86_64
@@ -75,28 +88,23 @@ jobs:
           CIBW_ARCHS: x86_64
           CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
           CIBW_BUILD_VERBOSITY: "1"
-          CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
+          CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
 
-      # --- universal2 ---
-      - name: Build universal2 wheels
+      # Show cache after x86_64 build
+      - name: Debug cache directory after x86_64 build
         run: |
-          export CIBW_ARCHS=universal2
-          cibuildwheel --output-dir wheelhouse
-        env:
-          CIBW_BUILD: "cp311-* cp312-*"
-          CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
-          CIBW_ARCHS: universal2
-          CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
-          CIBW_BUILD_VERBOSITY: "1"
-          CIBW_TEST_COMMAND: "python -c \"import os; print('Testing postal import...'); import postal; print(f'postal imported successfully. __file__={postal.__file__}')\""
+          echo "Cache directory contents after x86_64 build:"
+          find build/libpostal_install_cache -type d -maxdepth 2 | sort
+          echo "Checking x86_64 libpostal.a:"
+          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
 
-      # --- Save the single shared cache ---
-      - name: Save cache
-        uses: actions/cache@v4
-        if: always()
-        with:
-          path: build/libpostal_install_cache
-          key: macos-all-libpostal-cache-v2-${{ steps.get_submodule_hash.outputs.hash }}
+      # Show final cache directory contents
+      - name: Debug final cache directory
+        run: |
+          echo "Final cache directory contents:"
+          find build/libpostal_install_cache -type d | sort
+          echo "Checking libpostal.a files:"
+          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
