@@ -12,10 +12,9 @@ on:
     - cron: "0 12 1 * *"
 
 jobs:
-  build_wheels_macos:
-    name: Build wheels on macOS (arm64, x86_64, universal2)
-    # Use macOS-14 (ARM64) runner which can test both ARM64 and x86_64 via Rosetta 2
-    runs-on: macos-14
+  build_wheels_macos_arm64: # Job 1: ARM64
+    name: Build wheels on macOS (arm64)
+    runs-on: macos-14 # Use ARM runner
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,30 +36,8 @@ jobs:
       - name: Upgrade pip and install cibuildwheel
         run: python -m pip install --upgrade pip cibuildwheel
 
-      # Use a single shared cache that includes all architecture directories
-      - name: Cache libpostal libraries
-        uses: actions/cache@v4
-        id: cache-macos
-        with:
-          # Cache only the specific architecture subdirectories
-          path: build/libpostal_install_cache
-          # Single cache key for all architectures
-          key: macos-libpostal-all-v4-${{ steps.get_submodule_hash.outputs.hash }}
-          restore-keys: |
-            macos-libpostal-all-v4-
-
-      # Show the cache directory before building
-      - name: Debug cache directory before build
-        run: |
-          mkdir -p build/libpostal_install_cache
-          echo "Cache directory contents before build:"
-          find build/libpostal_install_cache -type d -maxdepth 1 | sort
-
-      # --- arm64 build ---
       - name: Build arm64 wheels
-        run: |
-          export CIBW_ARCHS=arm64
-          cibuildwheel --output-dir wheelhouse
+        run: cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp311-* cp312-*"
           CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
@@ -69,19 +46,38 @@ jobs:
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
 
-      # Show cache after arm64 build
-      - name: Debug cache directory after arm64 build
-        run: |
-          echo "Cache directory contents after arm64 build:"
-          find build/libpostal_install_cache -type d -maxdepth 2 | sort
-          echo "Checking arm64 libpostal.a:"
-          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
+      - name: Upload arm64 wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-arm64
+          path: ./wheelhouse/*.whl
 
-      # --- x86_64 build ---
-      - name: Build x86_64 wheels
+  build_wheels_macos_x86_64: # Job 2: x86_64
+    name: Build wheels on macOS (x86_64)
+    runs-on: macos-13 # Use Intel runner (Verify runner availability)
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Get libpostal submodule commit hash
+        id: get_submodule_hash
+        shell: bash
         run: |
-          export CIBW_ARCHS=x86_64
-          cibuildwheel --output-dir wheelhouse
+          HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
+          echo "hash=$HASH" >> $GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Upgrade pip and install cibuildwheel
+        run: python -m pip install --upgrade pip cibuildwheel
+
+      - name: Build x86_64 wheels
+        run: cibuildwheel --output-dir wheelhouse
         env:
           CIBW_BUILD: "cp311-* cp312-*"
           CIBW_BEFORE_BUILD_MACOS: "brew install autoconf automake libtool pkg-config curl"
@@ -90,24 +86,8 @@ jobs:
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
 
-      # Show cache after x86_64 build
-      - name: Debug cache directory after x86_64 build
-        run: |
-          echo "Cache directory contents after x86_64 build:"
-          find build/libpostal_install_cache -type d -maxdepth 2 | sort
-          echo "Checking x86_64 libpostal.a:"
-          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
-
-      # Show final cache directory contents
-      - name: Debug final cache directory
-        run: |
-          echo "Final cache directory contents:"
-          find build/libpostal_install_cache -type d | sort
-          echo "Checking libpostal.a files:"
-          find build/libpostal_install_cache -name "libpostal.a" -exec ls -lh {} \; -exec lipo -info {} \; 2>/dev/null || true
-
-      - name: Upload wheels
+      - name: Upload x86_64 wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-all
+          name: wheels-macos-x86_64
           path: ./wheelhouse/*.whl

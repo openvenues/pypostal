@@ -38,14 +38,14 @@ jobs:
           HASH=$(git submodule status vendor/libpostal | awk '{ sub(/^[+-]?/, ""); print $1 }')
           echo "hash=$HASH" >> $GITHUB_OUTPUT
 
-      - name: Cache compiled libpostal library
-        uses: actions/cache@v4
-        id: cache-libpostal
-        with:
-          path: build/libpostal_install_cache
-          key: linux-${{ matrix.arch }}-libpostal-cache-v2-${{ steps.get_submodule_hash.outputs.hash }}
-          restore-keys: |
-            linux-${{ matrix.arch }}-libpostal-cache-v2-
+      #      - name: Cache compiled libpostal library
+      #        uses: actions/cache@v4
+      #        id: cache-libpostal
+      #        with:
+      #          path: build/libpostal_install_cache
+      #          key: linux-${{ matrix.arch }}-libpostal-cache-v2-${{ steps.get_submodule_hash.outputs.hash }}
+      #          restore-keys: |
+      #            linux-${{ matrix.arch }}-libpostal-cache-v2-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -56,37 +56,37 @@ jobs:
         run: python -m pip install --upgrade pip cibuildwheel
 
       # Create an explicit bash script to execute inside the container
-      - name: Create copy script
-        run: |
-          cat > copy_cache.sh << 'EOF'
-          #!/bin/bash
-          set -ex
-          
-          # Print build directory content for debugging
-          echo "Container build directory content:"
-          ls -la build/ || echo "No build directory"
-          
-          CACHE_DIR="build/libpostal_install_cache"
-          if [ -d "$CACHE_DIR" ]; then
-            echo "Found cache directory at $CACHE_DIR"
-            mkdir -p "/host$CACHE_DIR"
-            ls -la "$CACHE_DIR" || echo "Empty cache directory"
-            find "$CACHE_DIR" -type d -exec ls -la {} \; || echo "No directories found"
-            
-            # Copy all files, creating directories as needed
-            cp -r "$CACHE_DIR"/* "/host$CACHE_DIR/" || echo "Copy failed"
-            
-            echo "After copy to host:"
-            ls -la "/host$CACHE_DIR/" || echo "Empty host cache directory"
-          else
-            echo "Cache directory $CACHE_DIR not found"
-          fi
-          EOF
-          chmod +x copy_cache.sh
+      #      - name: Create copy script
+      #        run: |
+      #          cat > copy_cache.sh << 'EOF'
+      #          #!/bin/bash
+      #          set -ex
+      #          \n
+      #          # Print build directory content for debugging
+      #          echo "Container build directory content:"
+      #          ls -la build/ || echo "No build directory"
+      #          \n
+      #          CACHE_DIR="build/libpostal_install_cache"
+      #          if [ -d "$CACHE_DIR" ]; then
+      #            echo "Found cache directory at $CACHE_DIR"
+      #            mkdir -p "/host$CACHE_DIR"
+      #            ls -la "$CACHE_DIR" || echo "Empty cache directory"
+      #            find "$CACHE_DIR" -type d -exec ls -la {} \; || echo "No directories found"
+      #            \n
+      #            # Copy all files, creating directories as needed
+      #            cp -r "$CACHE_DIR"/* "/host$CACHE_DIR/" || echo "Copy failed"
+      #            \n
+      #            echo "After copy to host:"
+      #            ls -la "/host$CACHE_DIR/" || echo "Empty host cache directory"
+      #          else
+      #            echo "Cache directory $CACHE_DIR not found"
+      #          fi
+      #          EOF
+      #          chmod +x copy_cache.sh
 
-      - name: Ensure cache directory exists
-        shell: bash
-        run: mkdir -p build/libpostal_install_cache
+      #      - name: Ensure cache directory exists
+      #        shell: bash
+      #        run: mkdir -p build/libpostal_install_cache
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
@@ -102,18 +102,17 @@ jobs:
           CIBW_BUILD_VERBOSITY: "1"
           CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
           # Improved after-build step that calls our dedicated script
-          CIBW_AFTER_BUILD: |
-            /host/copy_cache.sh
+          #          CIBW_AFTER_BUILD: |\n#            /host/copy_cache.sh\n        with:\n          output-dir: wheelhouse\n\n#      - name: Verify cache contents after build\n#        run: |\n#          echo "=== Cache directory structure after build ==="\n#          find build/libpostal_install_cache -type d | sort\n#          echo "=== Cache file sizes after build ==="\n#          find build/libpostal_install_cache -type f -name "*.a" -exec ls -lh {} \; || echo "No .a files found"\n#          du -sh build/libpostal_install_cache/* || echo "No subdirectories found"\n\n      - name: Upload wheels\n
         with:
           output-dir: wheelhouse
 
-      - name: Verify cache contents after build
-        run: |
-          echo "=== Cache directory structure after build ==="
-          find build/libpostal_install_cache -type d | sort
-          echo "=== Cache file sizes after build ==="
-          find build/libpostal_install_cache -type f -name "*.a" -exec ls -lh {} \; || echo "No .a files found"
-          du -sh build/libpostal_install_cache/* || echo "No subdirectories found"
+      #      - name: Verify cache contents after build
+      #        run: |
+      #          echo "=== Cache directory structure after build ==="
+      #          find build/libpostal_install_cache -type d | sort
+      #          echo "=== Cache file sizes after build ==="
+      #          find build/libpostal_install_cache -type f -name "*.a" -exec ls -lh {} \; || echo "No .a files found"
+      #          du -sh build/libpostal_install_cache/* || echo "No subdirectories found"
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
