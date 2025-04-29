@@ -11,6 +11,12 @@ on:
   schedule:
     - cron: "0 12 1 * *"
 
+env: # Define common vars at workflow level
+  CIBW_BUILD_COMMON: "cp311-* cp312-*"
+  CIBW_SKIP_COMMON: "pp* *-musllinux_* cp37-win*"
+  CIBW_TEST_COMMAND_COMMON: "python {project}/scripts/test_wheel.py"
+  CIBW_BUILD_VERBOSITY_COMMON: "1"
+
 jobs:
   build_wheels_linux:
     name: Build wheels on Linux (${{ matrix.arch }})
@@ -91,18 +97,16 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.17.0
         env:
-          CIBW_BUILD: "cp311-* cp312-*"
-          # Integrate bootstrap and -fPIC directly in the CIBW_BEFORE_BUILD_LINUX
+          # Reference workflow-level vars and add specific ones
+          CIBW_BUILD: ${{ env.CIBW_BUILD_COMMON }}
+          CIBW_SKIP: ${{ env.CIBW_SKIP_COMMON }}
+          CIBW_BUILD_VERBOSITY: ${{ env.CIBW_BUILD_VERBOSITY_COMMON }}
+          CIBW_TEST_COMMAND: ${{ env.CIBW_TEST_COMMAND_COMMON }}
           CIBW_BEFORE_BUILD_LINUX: >
             dnf install -y autoconf automake libtool pkgconfig curl perl-IPC-Cmd
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_MANYLINUX_AARCH64_IMAGE: manylinux_2_28
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
-          CIBW_SKIP: "pp* *-musllinux_* cp37-win*"
-          CIBW_BUILD_VERBOSITY: "1"
-          CIBW_TEST_COMMAND: "python {project}/scripts/test_wheel.py"
-          # Improved after-build step that calls our dedicated script
-          #          CIBW_AFTER_BUILD: |\n#            /host/copy_cache.sh\n        with:\n          output-dir: wheelhouse\n\n#      - name: Verify cache contents after build\n#        run: |\n#          echo "=== Cache directory structure after build ==="\n#          find build/libpostal_install_cache -type d | sort\n#          echo "=== Cache file sizes after build ==="\n#          find build/libpostal_install_cache -type f -name "*.a" -exec ls -lh {} \; || echo "No .a files found"\n#          du -sh build/libpostal_install_cache/* || echo "No subdirectories found"\n\n      - name: Upload wheels\n
         with:
           output-dir: wheelhouse
 
