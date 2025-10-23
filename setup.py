@@ -20,17 +20,55 @@ def _check_run(*cmd_parts):
 
 
 def _pkgconf_getflags(flag):
-    return _check_run("pkgconf", "--print-errors", flag, "libpostal")
+    return _check_run('pkgconf', '--print-errors', flag, 'libpostal')
 
 
-def pkgconf_parsed(flag):
+def _pkgconf_parsed(flag):
     res = _pkgconf_getflags(flag)
-    return [part[2:] for part in res.strip().split(" ")]
+    return [part[2:] for part in res.strip().split(' ')]
 
 
-_include_dirs = pkgconf_parsed("--cflags-only-I")
-_library_dirs = pkgconf_parsed("--libs-only-L")
-_libraries = pkgconf_parsed("--libs-only-l")
+def libpostal_flags_from_env():
+    prefix = os.getenv('LIBPOSTAL_PREFIX')
+    if prefix is None:
+        return None
+
+    return {
+        'include_dirs': [os.path.join(prefix, 'include')],
+        'library_dirs': [os.path.join(prefix, 'libs')],
+    }
+
+
+def libpostal_flags_from_pkgconf():
+    try:
+        return {
+            'include_dirs': _pkgconf_parsed('--cflags-only-I'),
+            'library_dirs': _pkgconf_parsed('--libs-only-L'),
+        }
+    except FileNotFoundError:
+        # If we get this exception, pkgconf was not found
+        return None
+
+
+def libpostal_flags():
+    # First, check the env
+    config = libpostal_flags_from_env()
+    if config is not None:
+        return config
+
+    # Then see if pkgconf can find it
+    config = libpostal_flags_from_pkgconf()
+    if config is not None:
+        return config
+
+    # If neither of those worked, just guess the default
+    return {
+        'include_dirs': ['/usr/local/include'],
+        'library_dirs': ['/usr/local/libs'],
+    }
+
+
+_libpostal_flags = libpostal_flags()
 
 
 def main():
@@ -46,51 +84,51 @@ def main():
         ext_modules=[
             Extension('postal._expand',
                       sources=['postal/pyexpand.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._parser',
                       sources=['postal/pyparser.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._token_types',
                       sources=['postal/pytokentypes.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._tokenize',
                       sources=['postal/pytokenize.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._normalize',
                       sources=['postal/pynormalize.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._near_dupe',
                       sources=['postal/pyneardupe.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
             Extension('postal._dedupe',
                       sources=['postal/pydedupe.c', 'postal/pyutils.c'],
-                      libraries=_libraries,
-                      include_dirs=_include_dirs,
-                      library_dirs=_library_dirs,
+                      libraries=['postal'],
+                      include_dirs=_libpostal_flags['include_dirs'],
+                      library_dirs=_libpostal_flags['library_dirs'],
                       extra_compile_args=['-std=c99'],
                       ),
         ],
