@@ -1,5 +1,6 @@
 import os
 import subprocess
+from subprocess import CalledProcessError
 
 from setuptools import setup, Extension, find_packages
 
@@ -15,7 +16,7 @@ def _check_run(*cmd_parts):
         stdin=subprocess.DEVNULL,
         check=True,
         capture_output=True,
-        encoding='utf-8'
+        encoding='utf-8',
     ).stdout
 
 
@@ -41,6 +42,7 @@ def libpostal_flags_from_env():
 
 def libpostal_flags_from_pkgconf():
     try:
+        _pkgconf_getflags('--exists')
         return {
             'include_dirs': _pkgconf_parsed('--cflags-only-I'),
             'library_dirs': _pkgconf_parsed('--libs-only-L'),
@@ -48,6 +50,12 @@ def libpostal_flags_from_pkgconf():
     except FileNotFoundError:
         # If we get this exception, pkgconf was not found
         return None
+    except CalledProcessError as e:
+        if e.returncode == 1:
+            # No libpostal.pc found
+            return None
+
+        raise
 
 
 def libpostal_flags():
