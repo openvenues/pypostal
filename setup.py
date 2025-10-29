@@ -7,7 +7,7 @@ from setuptools import setup, Extension, find_packages
 this_dir = os.path.realpath(os.path.dirname(__file__))
 
 
-VERSION = '1.1.10'
+VERSION = '1.1.11'
 
 
 def pkgconf_output(*options):
