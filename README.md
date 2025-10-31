@@ -86,16 +86,15 @@ copy src\.libs\libpostal-1.dll "C:\Python36\Lib\site-packages\postal\libpostal.d
 Compatibility
 -------------
 
-pypostal supports Python 3.5+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a CFFI wrapper, but is not a goal for this repo.
+pypostal supports Python 3.9+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a CFFI wrapper, but is not a goal for this repo.
 
 Tests
 -----
 
-Make sure you have [pytest](https://docs.pytest.org/en/stable/) installed, then run:
-
+Install the 'dev' dependency group and run `pytest`. E.g. with pip
 ```
-pip install -e .
-pytest postal/tests
+pip install --group dev -e .
+pytest tests
 ```
 
 The ```pip installe -e .``` business is needed so the C extensions build and are accessible/importable by the Python modules.

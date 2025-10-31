@@ -1,0 +1,52 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0.3"]  # Keep this in sync with dependency-groups.dev below
+
+[project]
+name = "postal"
+version = "1.1.11"
+requires-python = ">=3.9"
+dependencies = [
+	"six",
+]
+maintainers = [
+	{name = "mapzen.com", email = "pelias@mapzen.com"},
+]
+description = "Python bindings to libpostal for fast international address parsing/normalization"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+	"Intended Audience :: Developers",
+	"Intended Audience :: Information Technology",
+	"Programming Language :: C",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3 :: Only",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"Programming Language :: Python :: 3.13",
+	"Operating System :: MacOS :: MacOS X",
+	"Operating System :: POSIX :: Linux",
+	"Topic :: Text Processing :: Linguistic",
+	"Topic :: Scientific/Engineering :: GIS",
+	"Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+	"Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+[project.urls]
+homepage = "https://github.com/openvenues/pypostal"
+source = "https://github.com/openvenues/pypostal"
+
+[dependency-groups]
+dev = [
+	"pytest",
+	"setuptools>=77.0.3",
+]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.package-data]
+postal = ["*.h"]
