@@ -1,7 +1,7 @@
 pypostal
 --------
 
-[![Build Status](https://travis-ci.org/openvenues/pypostal.svg?branch=master)](https://travis-ci.org/openvenues/pypostal) [![PyPI version](https://img.shields.io/pypi/v/postal.svg)](https://pypi.python.org/pypi/postal) [![License](https://img.shields.io/github/license/openvenues/pypostal.svg)](https://github.com/openvenues/pypostal/blob/master/LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/postal.svg)](https://pypi.python.org/pypi/postal) [![License](https://img.shields.io/github/license/openvenues/pypostal.svg)](https://github.com/openvenues/pypostal/blob/master/LICENSE)
 
 These are the official Python bindings to https://github.com/openvenues/libpostal, a fast statistical parser/normalizer for street addresses anywhere in the world.
 
@@ -86,16 +86,16 @@ copy src\.libs\libpostal-1.dll "C:\Python36\Lib\site-packages\postal\libpostal.d
 Compatibility
 -------------
 
-pypostal supports Python 2.7+ and Python 3.4+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a CFFI wrapper, but is not a goal for this repo.
+pypostal supports Python 3.5+. These bindings are written using the Python C API and thus support CPython only. Since libpostal is a standalone C library, support for PyPy is still possible with a CFFI wrapper, but is not a goal for this repo.
 
 Tests
 -----
 
-Make sure you have [nose](https://nose.readthedocs.org/en/latest/) installed, then run:
+Make sure you have [pytest](https://docs.pytest.org/en/stable/) installed, then run:
 
 ```
-python setup.py build_ext --inplace
-nosetests postal/tests
+pip install -e .
+pytest postal/tests
 ```
 
-The ```build_ext --inplace``` business is needed so the C extensions build in the source checkout directory and are accessible/importable by the Python modules.
+The ```pip installe -e .``` business is needed so the C extensions build and are accessible/importable by the Python modules.
