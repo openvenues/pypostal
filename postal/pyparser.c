@@ -192,7 +192,9 @@ init_parser(void) {
         INITERROR;
     }
 
-   char* datadir = getenv("LIBPOSTAL_DATA_DIR");
+    Py_BEGIN_ALLOW_THREADS
+
+    char* datadir = getenv("LIBPOSTAL_DATA_DIR");
 
     if ((datadir!=NULL) && (!libpostal_setup_datadir(datadir) || !libpostal_setup_parser_datadir(datadir)) ||
         (!libpostal_setup() || !libpostal_setup_parser())) {
@@ -204,6 +206,7 @@ init_parser(void) {
     Py_AtExit(&cleanup_libpostal);
 #endif
 
+    Py_END_ALLOW_THREADS
 
 #ifdef IS_PY3K
     return module;
