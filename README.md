@@ -19,7 +19,7 @@ parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater Lon
 Installation
 ------------
 
-Before using the Python bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
+**Before using the Python bindings, you must install the libpostal C library.** Make sure you have the following prerequisites:
 
 **On Ubuntu/Debian**
 ```
@@ -71,7 +71,7 @@ cp -rf windows/* ./
 ./configure --datadir=[...some dir with a few GB of space...]
 make
 make install
-mkdir headers && cp -r /usr/include/libpostal/ headers/
+mkdir headers && cp -r /mingw64/include/libpostal/ headers/
 ```
 
 Now start a command prompt which has access to the Microsoft toolchain. This can be done by e.g. installing the [Windows 10 SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk) and then running the ``x64 Native Tools Command Prompt``.
