@@ -78,6 +78,7 @@ Now start a command prompt which has access to the Microsoft toolchain. This can
 
 Assuming your MSYS and Python are installed in some standard locations, you can use this command prompt to build+install the Python library like so:
 ```
+cd libpostal
 lib.exe /def:libpostal.def /out:postal.lib /machine:x64
 pip install postal --global-option=build_ext --global-option="-I[...libpostal checkout...]\headers" --global-option="-L[...libpostal checkout...]"
 copy src\.libs\libpostal-1.dll "C:\Python36\Lib\site-packages\postal\libpostal.dll"
