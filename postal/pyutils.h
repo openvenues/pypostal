@@ -8,6 +8,11 @@
 #define IS_PY3K
 #endif
 
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 void string_array_destroy(char **strings, size_t num_strings);
 
 char *PyObject_to_string(PyObject *obj);
