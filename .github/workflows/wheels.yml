@@ -1,0 +1,45 @@
+name: Wheels
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archs: x86_64
+          - os: ubuntu-24.04-arm
+            archs: aarch64
+          - os: macos-15-intel
+            archs: x86_64
+          - os: macos-14
+            archs: arm64
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test wheels
+        uses: pypa/cibuildwheel@adba99c781d3746d38b3a09b1cf797965bcb7fe6
+        env:
+          CIBW_BUILD: "cp314-* cp315-*"
+          CIBW_SKIP: "*-musllinux_*"
+          CIBW_ARCHS: ${{ matrix.archs }}
+          CIBW_MANYLINUX_X86_64_IMAGE: "quay.io/pypa/manylinux_2_28_x86_64:2026.10.10-1"
+          CIBW_MANYLINUX_AARCH64_IMAGE: "quay.io/pypa/manylinux_2_28_aarch64:2026.10.10-1"
+          CIBW_BEFORE_ALL_LINUX: 'bash "{project}/scripts/build-libpostal.sh" "{project}"'
+          CIBW_BEFORE_ALL_MACOS: 'brew install autoconf automake libtool pkg-config && bash "{project}/scripts/build-libpostal.sh" "{project}"'
+          CIBW_ENVIRONMENT_LINUX: 'LIBPOSTAL_PREFIX=/tmp/libpostal-wheel LIBPOSTAL_DATA_DIR=/tmp/libpostal-data LD_LIBRARY_PATH="/tmp/libpostal-wheel/lib:$LD_LIBRARY_PATH"'
+          CIBW_ENVIRONMENT_MACOS: 'LIBPOSTAL_PREFIX=/tmp/libpostal-wheel LIBPOSTAL_DATA_DIR=/tmp/libpostal-data MACOSX_DEPLOYMENT_TARGET=11.0'
+          CIBW_TEST_COMMAND: 'python -I -m unittest discover -s "{project}/postal/tests" -v'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}-${{ matrix.archs }}
+          path: wheelhouse/*.whl
