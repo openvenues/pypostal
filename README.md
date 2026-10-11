@@ -19,7 +19,24 @@ parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater Lon
 Installation
 ------------
 
-Before using the Python bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
+### Binary wheels
+
+The wheel workflow builds CPython 3.14 and 3.15 wheels for Linux x86_64/aarch64 and macOS x86_64/arm64. These wheels bundle the libpostal C library, its license and its model downloader. The model files remain separate because they require a few GB of disk space.
+
+After a maintainer publishes the wheels, install without compiling:
+
+```sh
+python -m pip install --only-binary=:all: postal
+export LIBPOSTAL_DATA_DIR="$HOME/.local/share/libpostal"
+downloader=$(python -c 'from pathlib import Path; import postal; print(Path(postal.__file__).with_name("libpostal_data"))')
+sh "$downloader" download all "$LIBPOSTAL_DATA_DIR"
+```
+
+The downloader requires `curl` and `tar`. Set `LIBPOSTAL_DATA_DIR` before importing the parser or normalizer in each process. It can also point to an existing compatible libpostal model directory. Models are downloaded explicitly, never during package installation or import.
+
+### Source installation
+
+For other interpreters/platforms, or to link against your own libpostal library, install from source. Before using these Python bindings, install the libpostal C library with the following prerequisites:
 
 **On Ubuntu/Debian**
 ```

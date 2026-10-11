@@ -98,7 +98,7 @@ def main():
         ],
         packages=find_packages(),
         package_data={
-            'postal': ['*.h']
+            'postal': ['*.h', 'LICENSE.libpostal', 'libpostal_data']
         },
         zip_safe=False,
         url='https://github.com/openvenues/pypostal',
@@ -114,6 +114,8 @@ def main():
             'Programming Language :: C',
             'Programming Language :: Python :: 3',
             'Programming Language :: Python :: 3.5',
+            'Programming Language :: Python :: 3.14',
+            'Programming Language :: Python :: 3.15',
             'Operating System :: MacOS :: MacOS X',
             'Operating System :: POSIX :: Linux',
             'Topic :: Text Processing :: Linguistic',
