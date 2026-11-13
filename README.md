@@ -19,7 +19,7 @@ parse_address('The Book Club 100-106 Leonard St, Shoreditch, London, Greater Lon
 Installation
 ------------
 
-Before using the Python bindings, you must install the libpostal C library. Make sure you have the following prerequisites:
+**Before using the Python bindings, you must install the libpostal C library.** Make sure you have the following prerequisites:
 
 **On Ubuntu/Debian**
 ```
@@ -71,13 +71,14 @@ cp -rf windows/* ./
 ./configure --datadir=[...some dir with a few GB of space...]
 make
 make install
-mkdir headers && cp -r /usr/include/libpostal/ headers/
+mkdir headers && cp -r /mingw64/include/libpostal/ headers/
 ```
 
 Now start a command prompt which has access to the Microsoft toolchain. This can be done by e.g. installing the [Windows 10 SDK](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk) and then running the ``x64 Native Tools Command Prompt``.
 
 Assuming your MSYS and Python are installed in some standard locations, you can use this command prompt to build+install the Python library like so:
 ```
+cd libpostal
 lib.exe /def:libpostal.def /out:postal.lib /machine:x64
 pip install postal --global-option=build_ext --global-option="-I[...libpostal checkout...]\headers" --global-option="-L[...libpostal checkout...]"
 copy src\.libs\libpostal-1.dll "C:\Python36\Lib\site-packages\postal\libpostal.dll"
